@@ -142,6 +142,8 @@ Tasks:
 * Add instructions for users.
 * Style validation errors.
 * Include navigation back to the login page.
+* Admin page to view daily inventory, we need to add a certain action so that there is a report each day 
+* Normal worker page
 
 ---
 
@@ -207,6 +209,7 @@ templates/inventory/api_docs.html
 
 Tasks:
 
+* remove this page - normal users from a consumer basis should not see
 * Explain the purpose of each endpoint.
 * Add example requests.
 * Add example JSON responses.
@@ -361,3 +364,11 @@ python manage.py shell
 ## Final Goal
 
 Make a successful project
+
+## API Documentation
+
+GET /inventory/api/items/
+POST /inventory/api/items/
+GET /inventory/api/items/<id>/
+PUT /inventory/api/items/<id>/
+DELETE /inventory/api/items/<id>/
