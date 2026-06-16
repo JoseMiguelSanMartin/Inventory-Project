@@ -1,17 +1,55 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="mb-8 flex items-center justify-between">
+<section class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
     <div>
-        <p class="text-sm uppercase tracking-widest text-blue-400">Inventory Dashboard</p>
-        <h1 class="mt-2 text-4xl font-bold text-white">Equipment Inventory</h1>
-        <p class="mt-2 text-slate-400">Track what you have and what still needs to be collected.</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
+            Inventory Dashboard
+        </p>
+
+        <h1 class="mt-2 text-5xl font-bold text-white">
+            Equipment Inventory
+        </h1>
+
+        <p class="mt-2 text-slate-400">
+            Track what you have and what still needs to be collected.
+        </p>
     </div>
 
     <a href="{% url 'inventory_create' %}"
-       class="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600">
+       class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600">
         + Add Item
     </a>
+</section>
+
+<section class="mb-8 grid gap-6 md:grid-cols-3">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Total Items</p>
+        <h2 class="mt-2 text-4xl font-bold text-white">
+            {{ items|length }}
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Inventory</p>
+        <h2 class="mt-2 text-4xl font-bold text-blue-400">
+            Active
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Status</p>
+        <h2 class="mt-2 text-4xl font-bold text-orange-400">
+            Review
+        </h2>
+    </div>
+</section>
+
+<section class="mb-6">
+    <input
+        type="text"
+        placeholder="Search inventory..."
+        class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
 </section>
 
 <section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
@@ -30,9 +68,18 @@
             <tbody class="divide-y divide-slate-800">
                 {% for item in items %}
                 <tr class="hover:bg-slate-800/60">
-                    <td class="px-6 py-4 font-semibold text-white">{{ item.item_name }}</td>
-                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_required }}</td>
-                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_have }}</td>
+                    <td class="px-6 py-4 font-semibold text-white">
+                        {{ item.item_name }}
+                    </td>
+
+                    <td class="px-6 py-4 text-slate-300">
+                        {{ item.quantity_required }}
+                    </td>
+
+                    <td class="px-6 py-4 text-slate-300">
+                        {{ item.quantity_have }}
+                    </td>
+
                     <td class="px-6 py-4">
                         {% if item.quantity_needed == 0 %}
                             <span class="rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-400">
@@ -44,16 +91,41 @@
                             </span>
                         {% endif %}
                     </td>
+
                     <td class="px-6 py-4">
-                        <a class="text-blue-400 hover:text-blue-300" href="{% url 'inventory_update' item.pk %}">Edit</a>
+                        <a class="text-blue-400 hover:text-blue-300"
+                           href="{% url 'inventory_update' item.pk %}">
+                            Edit
+                        </a>
+
                         <span class="mx-2 text-slate-600">|</span>
-                        <a class="text-red-400 hover:text-red-300" href="{% url 'inventory_delete' item.pk %}">Delete</a>
+
+                        <a class="text-red-400 hover:text-red-300"
+                           href="{% url 'inventory_delete' item.pk %}">
+                            Delete
+                        </a>
                     </td>
                 </tr>
+
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="px-6 py-10 text-center text-slate-400">
-                        No inventory items yet.
+                    <td colspan="5" class="px-6 py-16 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="mb-4 text-5xl">📦</div>
+
+                            <h2 class="text-xl font-semibold text-white">
+                                No inventory items found.
+                            </h2>
+
+                            <p class="mt-2 text-slate-400">
+                                Get started by adding your first item.
+                            </p>
+
+                            <a href="{% url 'inventory_create' %}"
+                               class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
+                                Add Item
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
