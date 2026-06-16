@@ -1,12 +1,39 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h1>Login</h1>
+{% block title %}Login{% endblock %}
 
-<!-- Your group can replace this with a custom login design. -->
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
+{% block content %}
+<div class="max-w-md mx-auto">
+
+    <div class="bg-slate-900 rounded-3xl p-10 border border-slate-800 shadow-2xl">
+
+        <h1 class="text-3xl font-bold mb-2">
+            Welcome Back
+        </h1>
+
+        <p class="text-slate-400 mb-8">
+            Sign in to continue.
+        </p>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button class="w-full bg-blue-500 hover:bg-blue-600 py-3 rounded-xl font-semibold">
+                Login
+            </button>
+        </form>
+
+        <p class="mt-8 text-center text-slate-400">
+            Need an account?
+            <a href="{% url 'signup' %}"
+               class="text-blue-400 hover:text-blue-300">
+                Create one
+            </a>
+        </p>
+
+    </div>
+
+</div>
 {% endblock %}
