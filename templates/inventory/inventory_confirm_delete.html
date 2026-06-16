@@ -1,12 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Delete Item</h1>
 
-<p>Delete {{ item.item_name }}?</p>
+<div class="max-w-lg mx-auto">
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Delete</button>
-</form>
+    <div class="bg-slate-900 border border-red-500/30 rounded-3xl p-10">
+
+        <h1 class="text-3xl font-bold text-red-400">
+            Delete Item
+        </h1>
+
+        <p class="mt-6 text-slate-300">
+            Are you sure you want to delete
+            <strong>{{ item.item_name }}</strong>?
+        </p>
+
+        <div class="mt-8 flex gap-4">
+
+            <form method="post">
+
+                {% csrf_token %}
+
+                <button class="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-xl font-semibold">
+                    Delete
+                </button>
+
+            </form>
+
+            <a href="{% url 'inventory_list' %}"
+               class="border border-slate-700 px-8 py-3 rounded-xl">
+                Cancel
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
 {% endblock %}
