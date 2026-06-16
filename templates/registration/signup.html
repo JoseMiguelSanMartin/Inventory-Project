@@ -1,12 +1,42 @@
 {% extends "base.html" %}
 
-{% block content %}
-<h1>Create User</h1>
+{% block title %}Create User{% endblock %}
 
-<!-- Your group can replace this with a custom signup design. -->
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create User</button>
-</form>
+{% block content %}
+<div class="max-w-md mx-auto">
+
+    <div class="bg-slate-900 rounded-3xl p-10 border border-slate-800">
+
+        <h1 class="text-3xl font-bold">
+            Create Account
+        </h1>
+
+        <p class="text-slate-400 mt-2 mb-8">
+            Join the inventory system.
+        </p>
+
+        <form method="post" class="space-y-6">
+
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button class="w-full bg-blue-500 hover:bg-blue-600 py-3 rounded-xl font-semibold">
+                Create Account
+            </button>
+
+        </form>
+
+        <p class="mt-6 text-center text-slate-400">
+            Already have an account?
+
+            <a href="{% url 'login' %}"
+               class="text-blue-400">
+                Login
+            </a>
+        </p>
+
+    </div>
+
+</div>
 {% endblock %}
