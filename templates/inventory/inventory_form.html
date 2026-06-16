@@ -1,11 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Inventory Form</h1>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save</button>
-</form>
+<div class="max-w-3xl mx-auto">
+
+    <div class="bg-slate-900 rounded-3xl p-10 border border-slate-800">
+
+        <h1 class="text-4xl font-bold mb-8">
+            Inventory Item
+        </h1>
+
+        <form method="post" class="space-y-6">
+
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <div class="flex gap-4">
+
+                <button class="bg-blue-500 hover:bg-blue-600 px-8 py-3 rounded-xl font-semibold">
+                    Save
+                </button>
+
+                <a href="{% url 'inventory_list' %}"
+                   class="border border-slate-700 px-8 py-3 rounded-xl">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
 {% endblock %}
