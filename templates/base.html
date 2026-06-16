@@ -1,33 +1,41 @@
-{% load static %}
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Inventory App{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<nav>
-    <a href="{% url 'home' %}">Home</a>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <a href="{% url 'home' %}" class="text-xl font-bold tracking-wide text-white">
+                Inventory<span class="text-blue-400">App</span>
+            </a>
 
-    {% if user.is_authenticated %}
-        <a href="{% url 'inventory_list' %}">Inventory</a>
-        <a href="{% url 'inventory_create' %}">Add Item</a>
+            <div class="flex items-center gap-4 text-sm">
+                {% if user.is_authenticated %}
+                    <a class="hover:text-blue-400" href="{% url 'inventory_list' %}">Inventory</a>
+                    <a class="hover:text-blue-400" href="{% url 'inventory_create' %}">Add Item</a>
 
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
-    {% else %}
-        <a href="{% url 'login' %}">Login</a>
-        <a href="{% url 'signup' %}">Create User</a>
-    {% endif %}
-</nav>
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="rounded-lg bg-red-500 px-4 py-2 font-semibold text-white hover:bg-red-600">
+                            Logout
+                        </button>
+                    </form>
+                {% else %}
+                    <a class="hover:text-blue-400" href="{% url 'login' %}">Login</a>
+                    <a class="rounded-lg bg-blue-500 px-4 py-2 font-semibold text-white hover:bg-blue-600"
+                       href="{% url 'signup' %}">
+                        Create User
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
 
-<main>
-    {% block content %}{% endblock %}
-</main>
-
+    <main class="mx-auto max-w-6xl px-6 py-10">
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>
