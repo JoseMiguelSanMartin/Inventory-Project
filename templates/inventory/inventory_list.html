@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Inventory</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Required</th>
+            <th>Have</th>
+            <th>Need</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.quantity_required }}</td>
+            <td>{{ item.quantity_have }}</td>
+            <td>{{ item.quantity_needed }}</td>
+            <td>
+                <a href="{% url 'inventory_update' item.pk %}">Edit</a>
+                <a href="{% url 'inventory_delete' item.pk %}">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No items yet.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
