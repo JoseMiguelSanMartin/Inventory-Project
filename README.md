@@ -373,3 +373,9 @@ POST /inventory/api/items/
 GET /inventory/api/items/<id>/
 PUT /inventory/api/items/<id>/
 DELETE /inventory/api/items/<id>/
+
+## User Logins
+
+Manager - Username: Admin -- Password: secret1234
+Work - Username: CrewOne -- Password: edmonton1
+Work - Username: CrewTwo -- Password: edmonton2
