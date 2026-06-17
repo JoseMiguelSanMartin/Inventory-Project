@@ -319,6 +319,7 @@ Before submission, verify that:
 * Inventory items can be created.
 * Inventory items can be edited.
 * Inventory items can be deleted.
+* Inventory search bar works.
 * API endpoints function as expected.
 * CSS is loading properly.
 * Templates render without errors.
