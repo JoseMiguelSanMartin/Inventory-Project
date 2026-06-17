@@ -12,4 +12,6 @@ urlpatterns = [
     path("<int:pk>/delete/", views.inventory_delete, name="inventory_delete"),
     path("api/docs/", views.api_docs, name="api_docs"),
     path("api/", include(router.urls)),
+    path("daily-report/", views.daily_report, name="daily_report"),
+    path("submit-report/", views.submit_daily_report, name="submit_daily_report"),
 ]
