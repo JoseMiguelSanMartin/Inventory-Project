@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 class InventoryItem(models.Model):
@@ -11,3 +12,11 @@ class InventoryItem(models.Model):
 
     def __str__(self):
         return self.item_name
+
+class DailyReport(models.Model):
+    submitted_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Daily Report - {self.submitted_at.date()} by {self.submitted_by}"
