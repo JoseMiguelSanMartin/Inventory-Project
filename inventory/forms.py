@@ -37,7 +37,11 @@ class InventoryItemForm(forms.ModelForm):
     def __init__(self,*args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields["item_name"].error_messages["required"] = (
+            "Item name is required."
+        )
+
         for field in ["quantity_required", "quantity_have"]:
             self.fields[field].error_messages["min_value"] = (
-                "Quantity cannot be negative"
+                "Quantity cannot be negative."
             )
