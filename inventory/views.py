@@ -7,6 +7,7 @@ from .forms import SignUpForm, InventoryItemForm
 from .models import InventoryItem, DailyReport
 from .serializers import InventoryItemSerializer
 
+manager_required = user_passes_test(lambda user: user.is_staff)
 
 def home(request):
     return render(request, "inventory/home.html")
