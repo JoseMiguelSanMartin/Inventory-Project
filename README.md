@@ -104,28 +104,25 @@ The following components have already been implemented:
 * Basic CSS
 * Requirements file
 * Admin registration
+* Login page design and styling
+* Signup page design and styling
+* Add better navigation (manager and worker navbar links)
+* Inventory table design and status indicators
+* Inventory search and filtering
+* Mobile responsive inventory list (card layout on small screens)
+* Role-based access control (manager vs worker)
+* Add/Edit/Delete restricted to manager only
+* Submit Daily Report restricted to manager only
+* Daily Report page restricted to manager only
+* API documentation page restricted to staff only
+* Added more validation to the inventory form
+* Added styling to the inventory form
+* Added help texts to the inventory form
+* Improved button layout for the delete confirmation
 
 ---
 
 # What The Group Still Needs To Do
-
-## Login Page
-
-File:
-
-```text
-templates/registration/login.html
-```
-
-Tasks:
-
-* Design the final login page layout.
-* Improve the appearance of the login form.
-* Add user-friendly error messages.
-* Add links to registration or password recovery if required.
-* Ensure the page matches the overall application style.
-
----
 
 ## Create User Page
 
@@ -137,31 +134,8 @@ templates/registration/signup.html
 
 Tasks:
 
-* Create a polished registration page.
-* Improve form layout.
-* Add instructions for users.
-* Style validation errors.
-* Include navigation back to the login page.
-* Admin page to view daily inventory, we need to add a certain action so that there is a report each day 
+* Manager notification when daily report is submitted (email or SMS)
 * Normal worker page
-
----
-
-## Inventory Dashboard
-
-File:
-
-```text
-templates/inventory/inventory_list.html
-```
-
-Tasks:
-
-* Improve the table design.
-* Add better navigation.
-* Display status indicators.
-* Add search or filtering if required.
-* Improve the overall user experience.
 
 ---
 
@@ -175,9 +149,6 @@ templates/inventory/inventory_form.html
 
 Tasks:
 
-* Improve form styling.
-* Add placeholders or help text.
-* Add validation feedback.
 * Make the form visually consistent with the rest of the site.
 
 ---
@@ -194,7 +165,6 @@ Tasks:
 
 * Improve confirmation messaging.
 * Add warning styling.
-* Improve button layout.
 * Make accidental deletion less likely.
 
 ---
@@ -209,12 +179,7 @@ templates/inventory/api_docs.html
 
 Tasks:
 
-* remove this page - normal users from a consumer basis should not see
-* Explain the purpose of each endpoint.
-* Add example requests.
-* Add example JSON responses.
-* Explain authentication requirements.
-* Improve the page design.
+* Remove this page — restricted to staff only for now, full removal pending.
 
 ---
 
@@ -231,7 +196,6 @@ Tasks:
 * Create the final application design.
 * Improve spacing and typography.
 * Add colors and button styles.
-* Ensure the application works on mobile devices.
 * Make all pages visually consistent.
 
 ---
@@ -255,8 +219,6 @@ Possible improvements:
 * Add storage location fields.
 * Add item status fields.
 * Add sorting.
-* Add searching.
-* Add filtering.
 * Improve validation.
 * Restrict inventory to individual users if required.
 
@@ -325,6 +287,8 @@ Before submission, verify that:
 * Templates render without errors.
 * No broken links exist.
 * All group members have tested their assigned features.
+* Manager cannot access Add Item, Edit, or Delete when logged in as a worker.
+* Workers cannot access the daily report page directly via URL.
 
 ---
 
@@ -378,4 +342,5 @@ DELETE /inventory/api/items/<id>/
 
 Manager - Username: Admin -- Password: secret1234
 Work - Username: CrewOne -- Password: edmonton1
-Work - Username: CrewTwo -- Password: edmonton2
+Work - Username: CrewTwo -- Password: edmonton2
+Sonnet 4.6 Low

@@ -1,5 +1,5 @@
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from rest_framework import viewsets
 
@@ -7,6 +7,7 @@ from .forms import SignUpForm, InventoryItemForm
 from .models import InventoryItem, DailyReport
 from .serializers import InventoryItemSerializer
 
+manager_required = user_passes_test(lambda user: user.is_staff)
 
 def home(request):
     return render(request, "inventory/home.html")
@@ -25,11 +26,12 @@ def signup(request):
 
 @login_required
 def inventory_list(request):
-    items = InventoryItem.objects.all()
-    return render(request, "inventory/inventory_list.html", {"items": items})
-
+    query = request.GET.get("q", "")
+    items = InventoryItem.objects.filter(item_name__icontains=query) if query else InventoryItem.objects.all()
+    return render(request, "inventory/inventory_list.html", {"items": items, "query": query})
 
 @login_required
+@manager_required
 def inventory_create(request):
     form = InventoryItemForm(request.POST or None)
 
@@ -41,6 +43,7 @@ def inventory_create(request):
 
 
 @login_required
+@manager_required
 def inventory_update(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
     form = InventoryItemForm(request.POST or None, instance=item)
@@ -53,6 +56,7 @@ def inventory_update(request, pk):
 
 
 @login_required
+@manager_required
 def inventory_delete(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
 
@@ -64,6 +68,7 @@ def inventory_delete(request, pk):
 
 
 @login_required
+@manager_required
 def submit_daily_report(request):
     if request.method == "POST":
         DailyReport.objects.create(submitted_by=request.user)
@@ -73,6 +78,7 @@ def submit_daily_report(request):
 
 
 @login_required
+@manager_required
 def daily_report(request):
     items = InventoryItem.objects.all()
 
@@ -100,6 +106,7 @@ def daily_report(request):
 
 
 @login_required
+@manager_required
 def api_docs(request):
     return render(request, "inventory/api_docs.html")
 
