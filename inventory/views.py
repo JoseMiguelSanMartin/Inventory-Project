@@ -25,9 +25,9 @@ def signup(request):
 
 @login_required
 def inventory_list(request):
-    items = InventoryItem.objects.all()
-    return render(request, "inventory/inventory_list.html", {"items": items})
-
+    query = request.GET.get("q", "")
+    items = InventoryItem.objects.filter(item_name__icontains=query) if query else InventoryItem.objects.all()
+    return render(request, "inventory/inventory_list.html", {"items": items, "query": query})
 
 @login_required
 def inventory_create(request):
