@@ -115,6 +115,9 @@ The following components have already been implemented:
 * Submit Daily Report restricted to manager only
 * Daily Report page restricted to manager only
 * API documentation page restricted to staff only
+* Added more validation to the inventory form
+* Added styling to the inventory form
+* Added help texts to the inventory form
 
 ---
 
@@ -145,9 +148,6 @@ templates/inventory/inventory_form.html
 
 Tasks:
 
-* Improve form styling.
-* Add placeholders or help text.
-* Add validation feedback.
 * Make the form visually consistent with the rest of the site.
 
 ---
