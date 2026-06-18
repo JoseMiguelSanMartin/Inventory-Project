@@ -118,6 +118,7 @@ The following components have already been implemented:
 * Added more validation to the inventory form
 * Added styling to the inventory form
 * Added help texts to the inventory form
+* Improved button layout for the delete confirmation
 
 ---
 
@@ -164,7 +165,6 @@ Tasks:
 
 * Improve confirmation messaging.
 * Add warning styling.
-* Improve button layout.
 * Make accidental deletion less likely.
 
 ---
