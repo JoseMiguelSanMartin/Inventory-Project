@@ -12,6 +12,13 @@ class InventoryItemForm(forms.ModelForm):
     class Meta:
         model = InventoryItem
         fields = ["item_name", "quantity_required", "quantity_have"]
+
+        labels = {
+            "item_name": "Item Name",
+            "quantity_required": "Quantity Needed",
+            "quantity_have": "Quantity Available",
+        }
+
         widgets = {
             "item_name": forms.TextInput(attrs={
                 "class": "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none",
