@@ -16,6 +16,7 @@
         </p>
     </div>
 
+    {% if request.user.is_staff %}
     <a href="{% url 'inventory_create' %}"
         class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
         + Add Item
@@ -27,6 +28,7 @@
             Submit Today's Report
         </button>
     </form>
+    {% endif %}
 
 </section>
 
@@ -101,15 +103,17 @@
                     </td>
 
                     <td class="px-6 py-4">
+                        {% if request.user.is_staff %}
                         <a class="text-blue-400 hover:text-blue-300" href="{% url 'inventory_update' item.pk %}">
                             Edit
                         </a>
-
                         <span class="mx-2 text-slate-600">|</span>
-
                         <a class="text-red-400 hover:text-red-300" href="{% url 'inventory_delete' item.pk %}">
                             Delete
                         </a>
+                        {% else %}
+                        <span class="text-slate-600">—</span>
+                        {% endif %}
                     </td>
                 </tr>
 
@@ -127,10 +131,12 @@
                                 Get started by adding your first item.
                             </p>
 
+                            {% if request.user.is_staff %}
                             <a href="{% url 'inventory_create' %}"
                                 class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
                                 Add Item
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
