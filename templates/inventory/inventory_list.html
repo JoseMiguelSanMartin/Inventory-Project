@@ -17,13 +17,13 @@
     </div>
 
     <a href="{% url 'inventory_create' %}"
-       class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
+        class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
         + Add Item
     </a>
     <form method="post" action="{% url 'submit_daily_report' %}">
         {% csrf_token %}
         <button type="submit"
-                class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
+            class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
             Submit Today's Report
         </button>
     </form>
@@ -54,10 +54,10 @@
 </section>
 
 <section class="mb-6">
-    <input
-        type="text"
-        placeholder="Search inventory..."
-        class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
+    <form method="get">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search inventory..."
+            class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
+    </form>
 </section>
 
 <section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
@@ -90,26 +90,24 @@
 
                     <td class="px-6 py-4">
                         {% if item.quantity_needed == 0 %}
-                            <span class="rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-400">
-                                Complete
-                            </span>
+                        <span class="rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-400">
+                            Complete
+                        </span>
                         {% else %}
-                            <span class="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-400">
-                                Need {{ item.quantity_needed }}
-                            </span>
+                        <span class="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-400">
+                            Need {{ item.quantity_needed }}
+                        </span>
                         {% endif %}
                     </td>
 
                     <td class="px-6 py-4">
-                        <a class="text-blue-400 hover:text-blue-300"
-                           href="{% url 'inventory_update' item.pk %}">
+                        <a class="text-blue-400 hover:text-blue-300" href="{% url 'inventory_update' item.pk %}">
                             Edit
                         </a>
 
                         <span class="mx-2 text-slate-600">|</span>
 
-                        <a class="text-red-400 hover:text-red-300"
-                           href="{% url 'inventory_delete' item.pk %}">
+                        <a class="text-red-400 hover:text-red-300" href="{% url 'inventory_delete' item.pk %}">
                             Delete
                         </a>
                     </td>
@@ -130,7 +128,7 @@
                             </p>
 
                             <a href="{% url 'inventory_create' %}"
-                               class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
+                                class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
                                 Add Item
                             </a>
                         </div>
