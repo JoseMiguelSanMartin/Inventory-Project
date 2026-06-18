@@ -104,33 +104,21 @@ The following components have already been implemented:
 * Basic CSS
 * Requirements file
 * Admin registration
-* Search bar on inventory list (filtering works)
-* Role-based access — manager vs worker (view guards + template hiding)
+* Login page design and styling
+* Signup page design and styling
+* Add better navigation (manager and worker navbar links)
+* Inventory table design and status indicators
+* Inventory search and filtering
+* Mobile responsive inventory list (card layout on small screens)
+* Role-based access control (manager vs worker)
 * Add/Edit/Delete restricted to manager only
 * Submit Daily Report restricted to manager only
 * Daily Report page restricted to manager only
-* Mobile responsive inventory list (card layout on small screens)
+* API documentation page restricted to staff only
+
 ---
 
 # What The Group Still Needs To Do
-
-## Login Page
-
-File:
-
-```text
-templates/registration/login.html
-```
-
-Tasks:
-
-* Design the final login page layout.
-* Improve the appearance of the login form.
-* Add user-friendly error messages.
-* Add links to registration or password recovery if required.
-* Ensure the page matches the overall application style.
-
----
 
 ## Create User Page
 
@@ -142,30 +130,8 @@ templates/registration/signup.html
 
 Tasks:
 
-* Create a polished registration page.
-* Improve form layout.
-* Add instructions for users.
-* Style validation errors.
-* Include navigation back to the login page.
-* Manager notification when daily report is submitted (email or SMS — not yet implemented)
+* Manager notification when daily report is submitted (email or SMS)
 * Normal worker page
-
----
-
-## Inventory Dashboard
-
-File:
-
-```text
-templates/inventory/inventory_list.html
-```
-
-Tasks:
-
-* Improve the table design.
-* Add better navigation.
-* Display status indicators.
-* Improve the overall user experience.
 
 ---
 
@@ -213,12 +179,7 @@ templates/inventory/api_docs.html
 
 Tasks:
 
-* remove this page - normal users from a consumer basis should not see
-* Explain the purpose of each endpoint.
-* Add example requests.
-* Add example JSON responses.
-* Explain authentication requirements.
-* Improve the page design.
+* Remove this page — restricted to staff only for now, full removal pending.
 
 ---
 
@@ -235,7 +196,6 @@ Tasks:
 * Create the final application design.
 * Improve spacing and typography.
 * Add colors and button styles.
-* Ensure the application works on mobile devices.
 * Make all pages visually consistent.
 
 ---
@@ -259,8 +219,6 @@ Possible improvements:
 * Add storage location fields.
 * Add item status fields.
 * Add sorting.
-* Add searching.
-* Add filtering.
 * Improve validation.
 * Restrict inventory to individual users if required.
 
@@ -384,4 +342,5 @@ DELETE /inventory/api/items/<id>/
 
 Manager - Username: Admin -- Password: secret1234
 Work - Username: CrewOne -- Password: edmonton1
-Work - Username: CrewTwo -- Password: edmonton2
+Work - Username: CrewTwo -- Password: edmonton2
+Sonnet 4.6 Low
