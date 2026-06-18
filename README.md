@@ -104,7 +104,12 @@ The following components have already been implemented:
 * Basic CSS
 * Requirements file
 * Admin registration
-
+* Search bar on inventory list (filtering works)
+* Role-based access — manager vs worker (view guards + template hiding)
+* Add/Edit/Delete restricted to manager only
+* Submit Daily Report restricted to manager only
+* Daily Report page restricted to manager only
+* Mobile responsive inventory list (card layout on small screens)
 ---
 
 # What The Group Still Needs To Do
@@ -142,7 +147,7 @@ Tasks:
 * Add instructions for users.
 * Style validation errors.
 * Include navigation back to the login page.
-* Admin page to view daily inventory, we need to add a certain action so that there is a report each day 
+* Manager notification when daily report is submitted (email or SMS — not yet implemented)
 * Normal worker page
 
 ---
@@ -160,7 +165,6 @@ Tasks:
 * Improve the table design.
 * Add better navigation.
 * Display status indicators.
-* Add search or filtering if required.
 * Improve the overall user experience.
 
 ---
@@ -325,6 +329,8 @@ Before submission, verify that:
 * Templates render without errors.
 * No broken links exist.
 * All group members have tested their assigned features.
+* Manager cannot access Add Item, Edit, or Delete when logged in as a worker.
+* Workers cannot access the daily report page directly via URL.
 
 ---
 
