@@ -26,3 +26,11 @@ class InventoryItemForm(forms.ModelForm):
                 "placeholder": "Example: 1"
             }),
         }
+
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for field in ["quantity_required", "quantity_have"]:
+            self.fields[field].error_messages["min_value"] = (
+                "Quantity cannot be negative"
+            )
