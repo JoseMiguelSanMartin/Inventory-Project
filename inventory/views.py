@@ -107,6 +107,13 @@ def submit_daily_report(request):
 @login_required
 @manager_required
 def daily_report(request):
+    selected_date = request.GET.get("date", "")
+
+    reports = DailyReport.objects.all().order_by("-submitted_at")
+
+    if selected_date:
+        reports = reports.filter(submitted_at__date=selected_date)
+
     items = InventoryItem.objects.all()
 
     out_of_stock = []
@@ -122,15 +129,16 @@ def daily_report(request):
             complete.append(item)
 
     total_issues = len(out_of_stock) + len(low_stock)
-    latest_report = DailyReport.objects.order_by("-submitted_at").first()
+    latest_report = reports.first()
 
     return render(request, "inventory/daily_report.html", {
-        "items": items,
+        "reports": reports,
+        "latest_report": latest_report,
+        "selected_date": selected_date,
         "out_of_stock": out_of_stock,
         "low_stock": low_stock,
         "complete": complete,
         "total_issues": total_issues,
-        "latest_report": latest_report,
     })
 
 
