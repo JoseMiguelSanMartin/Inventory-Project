@@ -11,7 +11,13 @@ class SignUpForm(UserCreationForm):
 class InventoryItemForm(forms.ModelForm):
     class Meta:
         model = InventoryItem
-        fields = ["item_name", "quantity_required", "quantity_have"]
+        fields = [
+            "item_name",
+            "category",
+            "quantity_required",
+            "quantity_have",
+            "notes",
+        ]
 
         labels = {
             "item_name": "Item Name",
