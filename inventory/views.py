@@ -29,26 +29,28 @@ def signup(request):
 @login_required
 def inventory_list(request):
     query = request.GET.get("q", "")
+    status = request.GET.get("status", "")
 
     items = InventoryItem.objects.all()
 
     if query:
         items = items.filter(item_name__icontains=query)
 
-    complete_count = 0
-    missing_count = 0
-    total_needed = 0
+    if status == "complete":
+        items = [item for item in items if item.quantity_needed == 0]
+    elif status == "missing":
+        items = [item for item in items if item.quantity_needed > 0]
+    elif status == "out":
+        items = [item for item in items if item.quantity_have == 0]
 
-    for item in items:
-        if item.quantity_needed == 0:
-            complete_count += 1
-        else:
-            missing_count += 1
-            total_needed += item.quantity_needed
+    complete_count = sum(1 for item in items if item.quantity_needed == 0)
+    missing_count = sum(1 for item in items if item.quantity_needed > 0)
+    total_needed = sum(item.quantity_needed for item in items)
 
     return render(request, "inventory/inventory_list.html", {
         "items": items,
         "query": query,
+        "status": status,
         "complete_count": complete_count,
         "missing_count": missing_count,
         "total_needed": total_needed,
