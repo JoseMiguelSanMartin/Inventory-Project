@@ -114,3 +114,31 @@ def api_docs(request):
 class InventoryItemViewSet(viewsets.ModelViewSet):
     queryset = InventoryItem.objects.all()
     serializer_class = InventoryItemSerializer
+
+@login_required
+def inventory_list(request):
+    query = request.GET.get("q", "")
+
+    items = InventoryItem.objects.all()
+
+    if query:
+        items = items.filter(item_name__icontains=query)
+
+    complete_count = 0
+    missing_count = 0
+    total_needed = 0
+
+    for item in items:
+        if item.quantity_needed == 0:
+            complete_count += 1
+        else:
+            missing_count += 1
+            total_needed += item.quantity_needed
+
+    return render(request, "inventory/inventory_list.html", {
+        "items": items,
+        "query": query,
+        "complete_count": complete_count,
+        "missing_count": missing_count,
+        "total_needed": total_needed,
+    })
