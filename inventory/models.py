@@ -12,6 +12,17 @@ class InventoryItem(models.Model):
 
     def __str__(self):
         return self.item_name
+    
+    @property
+    def status(self):
+        if self.quantity_have == 0:
+            return "Not Started"
+        elif self.quantity_have < self.quantity_required:
+            return "Needs Items"
+        elif self.quantity_have == self.quantity_required:
+            return "Complete"
+        else:
+            return "Overstocked"
 
 class DailyReport(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE)
