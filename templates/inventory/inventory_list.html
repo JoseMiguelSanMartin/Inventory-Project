@@ -16,17 +16,20 @@
         </p>
     </div>
 
-    <a href="{% url 'inventory_create' %}"
-       class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
-        + Add Item
-    </a>
-    <form method="post" action="{% url 'submit_daily_report' %}">
-        {% csrf_token %}
-        <button type="submit"
-                class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
-            Submit Today's Report
-        </button>
-    </form>
+    <div class="flex items-center gap-4">
+        <a href="{% url 'inventory_create' %}"
+        class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
+            + Add Item
+        </a>
+
+        <form method="post" action="{% url 'submit_daily_report' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
+                Submit Today's Report
+            </button>
+        </form>
+    </div>
 
 </section>
 
