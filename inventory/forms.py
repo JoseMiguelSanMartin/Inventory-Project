@@ -14,9 +14,8 @@ class InventoryItemForm(forms.ModelForm):
         fields = ["item_name", "category", "quantity_required", "quantity_have", "notes"]
 
         widgets = {
-            "item_name": forms.TextInput(attrs={
-                "class": "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none",
-                "placeholder": "Example: Paint Roller",
+            "item_name": forms.Select(attrs={
+            "class": "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-blue-500 focus:outline-none",
             }),
             "category": forms.TextInput(attrs={
                 "class": "w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none",
