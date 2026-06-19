@@ -142,3 +142,11 @@ def inventory_list(request):
         "missing_count": missing_count,
         "total_needed": total_needed,
     })
+
+@login_required
+def daily_report(request):
+    items = InventoryItem.objects.all()
+
+    return render(request, "inventory/daily_report.html", {
+        "items": items
+    })
