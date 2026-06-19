@@ -141,6 +141,35 @@ def daily_report(request):
         "total_issues": total_issues,
     })
 
+@login_required
+@manager_required
+def daily_report_detail(request, pk):
+    report = get_object_or_404(DailyReport, pk=pk)
+
+    items = InventoryItem.objects.all()
+
+    out_of_stock = []
+    low_stock = []
+    complete = []
+
+    for item in items:
+        if item.quantity_have == 0:
+            out_of_stock.append(item)
+        elif item.quantity_needed > 0:
+            low_stock.append(item)
+        else:
+            complete.append(item)
+
+    total_issues = len(out_of_stock) + len(low_stock)
+
+    return render(request, "inventory/daily_report_detail.html", {
+        "report": report,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "complete": complete,
+        "total_issues": total_issues,
+    })
+
 
 @login_required
 @manager_required

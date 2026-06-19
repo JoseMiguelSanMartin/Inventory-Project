@@ -14,4 +14,5 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("daily-report/", views.daily_report, name="daily_report"),
     path("submit-report/", views.submit_daily_report, name="submit_daily_report"),
+    path("daily-report/<int:pk>/", views.daily_report_detail, name="daily_report_detail"),
 ]

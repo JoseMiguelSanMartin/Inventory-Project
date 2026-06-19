@@ -128,18 +128,16 @@
         Report History
     </h2>
 
-    {% for report in reports %}
-        <div class="mb-3 rounded-xl bg-slate-950 p-4 text-slate-300">
+   {% for report in reports %}
+        <a href="{% url 'daily_report_detail' report.pk %}"
+        class="mb-3 block rounded-xl bg-slate-950 p-4 text-slate-300 hover:bg-slate-800">
             Submitted by {{ report.submitted_by }}
             on {{ report.submitted_at|date:"M d, Y - h:i A" }}
-        </div>
+        </a>
     {% empty %}
-        <p class="text-slate-400">
-            No reports found.
-        </p>
+        <p class="text-slate-400">No reports found.</p>
     {% endfor %}
 </section>
-```
 
 </section>
 {% endblock %}
