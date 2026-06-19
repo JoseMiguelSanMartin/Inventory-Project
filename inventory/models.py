@@ -5,6 +5,9 @@ class InventoryItem(models.Model):
     item_name = models.CharField(max_length=100)
     quantity_required = models.PositiveIntegerField(default=0)
     quantity_have = models.PositiveIntegerField(default=0)
+    category = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def quantity_needed(self):
