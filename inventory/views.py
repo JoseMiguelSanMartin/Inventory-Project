@@ -7,7 +7,9 @@ from .forms import SignUpForm, InventoryItemForm
 from .models import InventoryItem, DailyReport
 from .serializers import InventoryItemSerializer
 
+
 manager_required = user_passes_test(lambda user: user.is_staff)
+
 
 def home(request):
     return render(request, "inventory/home.html")
@@ -27,8 +29,31 @@ def signup(request):
 @login_required
 def inventory_list(request):
     query = request.GET.get("q", "")
-    items = InventoryItem.objects.filter(item_name__icontains=query) if query else InventoryItem.objects.all()
-    return render(request, "inventory/inventory_list.html", {"items": items, "query": query})
+
+    items = InventoryItem.objects.all()
+
+    if query:
+        items = items.filter(item_name__icontains=query)
+
+    complete_count = 0
+    missing_count = 0
+    total_needed = 0
+
+    for item in items:
+        if item.quantity_needed == 0:
+            complete_count += 1
+        else:
+            missing_count += 1
+            total_needed += item.quantity_needed
+
+    return render(request, "inventory/inventory_list.html", {
+        "items": items,
+        "query": query,
+        "complete_count": complete_count,
+        "missing_count": missing_count,
+        "total_needed": total_needed,
+    })
+
 
 @login_required
 @manager_required
@@ -94,6 +119,7 @@ def daily_report(request):
         else:
             complete.append(item)
 
+    total_issues = len(out_of_stock) + len(low_stock)
     latest_report = DailyReport.objects.order_by("-submitted_at").first()
 
     return render(request, "inventory/daily_report.html", {
@@ -101,6 +127,7 @@ def daily_report(request):
         "out_of_stock": out_of_stock,
         "low_stock": low_stock,
         "complete": complete,
+        "total_issues": total_issues,
         "latest_report": latest_report,
     })
 
@@ -114,39 +141,3 @@ def api_docs(request):
 class InventoryItemViewSet(viewsets.ModelViewSet):
     queryset = InventoryItem.objects.all()
     serializer_class = InventoryItemSerializer
-
-@login_required
-def inventory_list(request):
-    query = request.GET.get("q", "")
-
-    items = InventoryItem.objects.all()
-
-    if query:
-        items = items.filter(item_name__icontains=query)
-
-    complete_count = 0
-    missing_count = 0
-    total_needed = 0
-
-    for item in items:
-        if item.quantity_needed == 0:
-            complete_count += 1
-        else:
-            missing_count += 1
-            total_needed += item.quantity_needed
-
-    return render(request, "inventory/inventory_list.html", {
-        "items": items,
-        "query": query,
-        "complete_count": complete_count,
-        "missing_count": missing_count,
-        "total_needed": total_needed,
-    })
-
-@login_required
-def daily_report(request):
-    items = InventoryItem.objects.all()
-
-    return render(request, "inventory/daily_report.html", {
-        "items": items
-    })
