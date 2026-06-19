@@ -2,7 +2,38 @@ from django.contrib.auth.models import User
 from django.db import models
 
 class InventoryItem(models.Model):
-    item_name = models.CharField(max_length=100)
+    ITEM_CHOICES = [
+        ("Gloves Set", "Gloves Set"),
+        ("Hose Head", "Hose Head"),
+        ("Knee Pad Set", "Knee Pad Set"),
+        ("Pro Grip", "Pro Grip"),
+        ("Orange Soap", "Orange Soap"),
+        ("Mini Roller", "Mini Roller"),
+        ("Paver", "Paver"),
+        ("Mini Brushes", "Mini Brushes"),
+        ("Scrapers", "Scrapers"),
+        ("Flat Head", "Flat Head"),
+        ("Scissors", "Scissors"),
+        ("Bottle", "Bottle"),
+        ("Brushes", "Brushes"),
+        ("Buckets", "Buckets"),
+        ("Sealing Buckets", "Sealing Buckets"),
+        ("Rocks", "Rocks"),
+        ("Masks", "Masks"),
+        ("Guns", "Guns"),
+        ("Battery", "Battery"),
+        ("Safety Glasses", "Safety Glasses"),
+        ("New Brushes", "Brushes"),
+        ("Clear Seal Bucket", "Clear Seal Bucket"),
+        ("Garbage Bags", "Garbage Bags"),
+        ("Heads for Roller", "Heads for Roller"),
+        ("Head for Mini Roller", "Head for Mini Roller"),
+        ("Respirator", "Respirator"),
+        ("Pebbles", "Pebbles"),
+        ("Crack Fill", "Crack Fill"),
+    ]
+
+    item_name = models.CharField(max_length=100, choices=ITEM_CHOICES)
     quantity_required = models.PositiveIntegerField(default=0)
     quantity_have = models.PositiveIntegerField(default=0)
     category = models.CharField(max_length=100, blank=True)
