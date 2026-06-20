@@ -5,6 +5,16 @@ from . import views
 router = DefaultRouter()
 router.register("items", views.InventoryItemViewSet)
 
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+}
+
 urlpatterns = [
     path("", views.inventory_list, name="inventory_list"),
     path("create/", views.inventory_create, name="inventory_create"),
