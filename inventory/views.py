@@ -18,7 +18,9 @@ manager_required = user_passes_test(_is_manager, login_url="login")
 
 
 def home(request):
-    return render(request, "inventory/home.html")
+    if request.user.is_authenticated:
+        return redirect("inventory_list")
+    return render(request, "inventory/home.html")ry/home.html")
 
 
 def signup(request):
