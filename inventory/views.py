@@ -10,7 +10,10 @@ from .models import InventoryItem, DailyReport, DailyReportSnapshot
 from .serializers import InventoryItemSerializer
 
 
-manager_required = user_passes_test(lambda user: user.is_staff)
+def _is_manager(user):
+    return user.is_active and user.is_staff
+
+manager_required = user_passes_test(_is_manager, login_url="login")
 
 
 def home(request):
@@ -64,7 +67,6 @@ def inventory_list(request):
     })
 
 
-@login_required
 @manager_required
 def inventory_create(request):
     form = InventoryItemForm(request.POST or None)
@@ -77,7 +79,6 @@ def inventory_create(request):
     return render(request, "inventory/inventory_form.html", {"form": form})
 
 
-@login_required
 @manager_required
 def inventory_update(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
@@ -91,7 +92,6 @@ def inventory_update(request, pk):
     return render(request, "inventory/inventory_form.html", {"form": form})
 
 
-@login_required
 @manager_required
 def inventory_delete(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
@@ -104,7 +104,6 @@ def inventory_delete(request, pk):
     return render(request, "inventory/inventory_confirm_delete.html", {"item": item})
 
 
-@login_required
 @manager_required
 def submit_daily_report(request):
     if request.method == "POST":
@@ -130,7 +129,6 @@ def submit_daily_report(request):
     return redirect("inventory_list")
 
 
-@login_required
 @manager_required
 def daily_report(request):
     selected_date = request.GET.get("date", "")
@@ -167,7 +165,6 @@ def daily_report(request):
         "total_issues": total_issues,
     })
 
-@login_required
 @manager_required
 def daily_report_detail(request, pk):
     report = get_object_or_404(DailyReport, pk=pk)
@@ -186,7 +183,6 @@ def daily_report_detail(request, pk):
     })
 
 
-@login_required
 @manager_required
 def api_docs(request):
     return render(request, "inventory/api_docs.html")
