@@ -32,6 +32,11 @@
                    class="transition {% if url_name == 'daily_report' or url_name == 'daily_report_detail' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
                     Daily Report
                 </a>
+
+                <a href="{% url 'signup' %}"
+                   class="transition {% if url_name == 'signup' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                    Create User
+                </a>
                 {% endif %}
 
                 <form method="post" action="{% url 'logout' %}">
@@ -45,11 +50,6 @@
                 <a href="{% url 'login' %}"
                    class="transition {% if url_name == 'login' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
                     Login
-                </a>
-
-                <a href="{% url 'signup' %}"
-                    class="rounded-xl bg-blue-500 px-5 py-2.5 font-semibold text-white transition hover:bg-blue-600">
-                    Create User
                 </a>
                 {% endif %}
             </div>

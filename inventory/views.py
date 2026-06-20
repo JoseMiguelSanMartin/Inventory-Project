@@ -23,6 +23,8 @@ def home(request):
     return render(request, "inventory/home.html")
 
 
+@login_required
+@manager_required
 def signup(request):
     form = SignUpForm(request.POST or None)
 
