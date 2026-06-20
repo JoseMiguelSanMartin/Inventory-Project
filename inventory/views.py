@@ -1,5 +1,6 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
 from rest_framework import viewsets
 
@@ -31,21 +32,26 @@ def inventory_list(request):
     query = request.GET.get("q", "")
     status = request.GET.get("status", "")
 
-    items = InventoryItem.objects.all()
+    qty_needed_expr = ExpressionWrapper(
+        F("quantity_required") - F("quantity_have"),
+        output_field=IntegerField(),
+    )
+    items = InventoryItem.objects.annotate(qty_needed_db=qty_needed_expr)
 
     if query:
         items = items.filter(item_name__icontains=query)
 
     if status == "complete":
-        items = [item for item in items if item.quantity_needed == 0]
+        items = items.filter(qty_needed_db__lte=0)
     elif status == "missing":
-        items = [item for item in items if item.quantity_needed > 0]
+        items = items.filter(qty_needed_db__gt=0)
     elif status == "out":
-        items = [item for item in items if item.quantity_have == 0]
+        items = items.filter(quantity_have=0)
 
+    items = list(items)
     complete_count = sum(1 for item in items if item.quantity_needed == 0)
-    missing_count = sum(1 for item in items if item.quantity_needed > 0)
-    total_needed = sum(item.quantity_needed for item in items)
+    missing_count  = sum(1 for item in items if item.quantity_needed > 0)
+    total_needed   = sum(item.quantity_needed for item in items)
 
     return render(request, "inventory/inventory_list.html", {
         "items": items,
