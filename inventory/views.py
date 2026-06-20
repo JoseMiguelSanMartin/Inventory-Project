@@ -1,4 +1,5 @@
 from django.contrib.auth import login
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
@@ -70,6 +71,7 @@ def inventory_create(request):
 
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Item added successfully.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_form.html", {"form": form})
@@ -83,6 +85,7 @@ def inventory_update(request, pk):
 
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Item updated successfully.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_form.html", {"form": form})
@@ -95,6 +98,7 @@ def inventory_delete(request, pk):
 
     if request.method == "POST":
         item.delete()
+        messages.success(request, f"\"{item.item_name}\" was deleted.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_confirm_delete.html", {"item": item})
@@ -120,6 +124,7 @@ def submit_daily_report(request):
             for item in items
         ])
 
+        messages.success(request, "Daily report submitted.")
         return redirect("daily_report")
 
     return redirect("inventory_list")
