@@ -65,3 +65,30 @@ class DailyReport(models.Model):
 
     def __str__(self):
         return f"Daily Report - {self.submitted_at.date()} by {self.submitted_by}"
+
+
+class DailyReportSnapshot(models.Model):
+    """
+    Freezes the state of every InventoryItem at the moment a DailyReport
+    is submitted.  Querying snapshots through a report gives you the
+    historical picture rather than today's live quantities.
+    """
+    report = models.ForeignKey(
+        DailyReport,
+        on_delete=models.CASCADE,
+        related_name="snapshots",
+    )
+    item_name = models.CharField(max_length=100)
+    category = models.CharField(max_length=100, blank=True)
+    quantity_required = models.PositiveIntegerField()
+    quantity_have = models.PositiveIntegerField()
+
+
+    quantity_needed = models.PositiveIntegerField()
+    status = models.CharField(max_length=20)
+
+    class Meta:
+        ordering = ["item_name"]
+
+    def __str__(self):
+        return f"{self.item_name} @ report #{self.report_id}"
