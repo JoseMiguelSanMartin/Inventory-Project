@@ -1,65 +1,210 @@
 {% extends "base.html" %}
 
+{% block title %}Inventory{% endblock %}
+
 {% block content %}
-<div class="min-h-[70vh] flex items-center justify-center px-4">
+<section class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+    <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
+            Inventory Dashboard
+        </p>
 
-    <section class="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900 p-10 shadow-2xl">
+        <h1 class="mt-2 text-5xl font-bold text-white">
+            Equipment Inventory
+        </h1>
 
-        <div class="mb-8">
-            <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
-                Inventory Form
-            </p>
+        <p class="mt-2 text-slate-400">
+            Track what you have and what still needs to be collected
+        </p>
+    </div>
 
-            <h1 class="mt-3 text-4xl font-bold text-white">
-                Inventory Item
-            </h1>
+    <div class="flex items-center gap-4">
+        <a href="{% url 'inventory_create' %}"
+        class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
+            + Add Item
+        </a>
 
-            <p class="mt-2 text-slate-400">
-                Add or update the item details below.
-            </p>
-        </div>
-
-        <form method="post" class="space-y-6" novalidate>
+        <form method="post" action="{% url 'submit_daily_report' %}" class="m-0">
             {% csrf_token %}
+            <button type="submit"
+                    class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
+                Submit Today's Report
+            </button>
+        </form>
+    </div>
 
-            {% if form.errors %}
-            <div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-                <p class="font-semibold text-red-400">
-                    Unable to save item. Please correct the errors below.
-                </p>
+</section>
+
+<section class="mb-8 grid gap-6 md:grid-cols-4">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Total Items</p>
+        <h2 class="mt-2 text-4xl font-bold text-white">
+            {{ items|length }}
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Complete</p>
+        <h2 class="mt-2 text-4xl font-bold text-green-400">
+            {{ complete_count }}
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Missing</p>
+        <h2 class="mt-2 text-4xl font-bold text-orange-400">
+            {{ missing_count }}
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Total Needed</p>
+        <h2 class="mt-2 text-4xl font-bold text-red-400">
+            {{ total_needed }}
+        </h2>
+    </div>
+</section>
+
+<section class="mb-6">
+    <form method="get">
+        {# Preserve the active status filter when submitting a new search #}
+        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        <input type="text" name="q" value="{{ query }}" placeholder="Search inventory..."
+            class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
+    </form>
+</section>
+
+<section class="mb-6 flex flex-wrap gap-3">
+    {# Preserve the search query when switching status filters #}
+    <a href="?q={{ query }}"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if not status %}bg-slate-500{% else %}bg-slate-700 hover:bg-slate-600{% endif %}">
+        All
+    </a>
+
+    <a href="?q={{ query }}&status=complete"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'complete' %}bg-green-600{% else %}bg-green-500 hover:bg-green-600{% endif %}">
+        Complete
+    </a>
+
+    <a href="?q={{ query }}&status=missing"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'missing' %}bg-orange-600{% else %}bg-orange-500 hover:bg-orange-600{% endif %}">
+        Missing
+    </a>
+
+    <a href="?q={{ query }}&status=out"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'out' %}bg-red-600{% else %}bg-red-500 hover:bg-red-600{% endif %}">
+        Out of Stock
+    </a>
+</section>
+
+<section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+
+    {# Desktop table — hidden on mobile #}
+    <div class="hidden overflow-x-auto md:block">
+        <table class="w-full text-left">
+            <thead class="border-b border-slate-800 text-sm uppercase text-slate-400">
+                <tr>
+                    <th class="px-6 py-4">Item</th>
+                    <th class="px-6 py-4">Required</th>
+                    <th class="px-6 py-4">Have</th>
+                    <th class="px-6 py-4">Need</th>
+                    <th class="px-6 py-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for item in items %}
+                <tr class="hover:bg-slate-800/60">
+                    <td class="px-6 py-4 font-semibold text-white">{{ item.item_name }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_required }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_have }}</td>
+                    <td class="px-6 py-4">
+                        {% if item.quantity_needed == 0 %}
+                        <span
+                            class="rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-400">Complete</span>
+                        {% else %}
+                        <span class="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-400">Need
+                            {{ item.quantity_needed }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if request.user.is_staff %}
+                        <a class="text-blue-400 hover:text-blue-300"
+                            href="{% url 'inventory_update' item.pk %}">Edit</a>
+                        <span class="mx-2 text-slate-600">|</span>
+                        <a class="text-red-400 hover:text-red-300"
+                            href="{% url 'inventory_delete' item.pk %}">Delete</a>
+                        {% else %}
+                        <span class="text-slate-600">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-16 text-center">
+                        <div class="flex flex-col items-center">
+                            <h2 class="text-xl font-semibold text-white">No inventory items found</h2>
+                            <p class="mt-2 text-slate-400">Get started by adding your first item</p>
+                            {% if request.user.is_staff %}
+                            <a href="{% url 'inventory_create' %}"
+                                class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">Add
+                                Item</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Mobile cards hidden on desktop #}
+    <div class="divide-y divide-slate-800 md:hidden">
+        {% for item in items %}
+        <div class="p-5">
+            <div class="mb-3 flex items-start justify-between">
+                <p class="font-semibold text-white">{{ item.item_name }}</p>
+                {% if item.quantity_needed == 0 %}
+                <span
+                    class="rounded-full bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-400">Complete</span>
+                {% else %}
+                <span class="rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-400">Need {{
+                    item.quantity_needed }}</span>
+                {% endif %}
             </div>
-            {% endif %}
-
-            {% for field in form %}
+            <div class="grid grid-cols-3 gap-2 text-sm text-slate-400">
                 <div>
-                    <label for="{{ field.id_for_label }}" class="mb-2 block font-semibold text-slate-200">
-                        {{ field.label }}
-                    </label>
-
-                    {{ field }}
-
-                    {% if field.errors %}
-                        <p class="mt-2 text-sm text-red-400">
-                            {{ field.errors|striptags }}
-                        </p>
+                    <p class="text-xs uppercase text-slate-500">Required</p>
+                    <p class="mt-1 text-white">{{ item.quantity_required }}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-slate-500">Have</p>
+                    <p class="mt-1 text-white">{{ item.quantity_have }}</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase text-slate-500">Actions</p>
+                    {% if request.user.is_staff %}
+                    <a class="mt-1 block text-blue-400 hover:text-blue-300"
+                        href="{% url 'inventory_update' item.pk %}">Edit</a>
+                    <a class="block text-red-400 hover:text-red-300"
+                        href="{% url 'inventory_delete' item.pk %}">Delete</a>
+                    {% else %}
+                    <p class="mt-1 text-slate-600">—</p>
                     {% endif %}
                 </div>
-            {% endfor %}
-
-            <div class="flex gap-4 pt-4">
-                <button type="submit"
-                        class="rounded-xl bg-blue-500 px-8 py-3 font-semibold text-white shadow-lg  hover:bg-blue-600">
-                    Save
-                </button>
-
-                <a href="{% url 'inventory_list' %}"
-                   class="rounded-xl border border-slate-700 px-8 py-3 font-semibold text-slate-200 hover:border-slate-500 hover:bg-slate-800">
-                    Cancel
-                </a>
             </div>
-        </form>
+        </div>
+        {% empty %}
+        <div class="px-6 py-16 text-center">
+            <h2 class="text-xl font-semibold text-white">No inventory items found</h2>
+            <p class="mt-2 text-slate-400">Get started by adding your first item</p>
+            {% if request.user.is_staff %}
+            <a href="{% url 'inventory_create' %}"
+                class="mt-6 inline-block rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">Add
+                Item</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
 
-    </section>
-
-</div>
+</section>
 {% endblock %}
