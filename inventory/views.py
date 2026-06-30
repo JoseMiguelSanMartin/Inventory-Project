@@ -1,18 +1,35 @@
 from django.contrib.auth import login
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
 from rest_framework import viewsets
+from rest_framework.permissions import IsAdminUser
 
+<<<<<<< HEAD
 from .forms import SignUpForm, InventoryItemForm, InventoryQuantityFormSet
 from .models import InventoryItem, DailyReport
+=======
+from .forms import SignUpForm, InventoryItemForm
+from .models import InventoryItem, DailyReport, DailyReportSnapshot
+>>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
 from .serializers import InventoryItemSerializer
 
-manager_required = user_passes_test(lambda user: user.is_staff)
+
+def _is_manager(user):
+    return user.is_active and user.is_staff
+
+manager_required = user_passes_test(_is_manager, login_url="login")
+
 
 def home(request):
+    if request.user.is_authenticated:
+        return redirect("inventory_list")
     return render(request, "inventory/home.html")
 
 
+@login_required
+@manager_required
 def signup(request):
     form = SignUpForm(request.POST or None)
 
@@ -27,22 +44,51 @@ def signup(request):
 @login_required
 def inventory_list(request):
     query = request.GET.get("q", "")
-    items = InventoryItem.objects.filter(item_name__icontains=query) if query else InventoryItem.objects.all()
-    return render(request, "inventory/inventory_list.html", {"items": items, "query": query})
+    status = request.GET.get("status", "")
 
-@login_required
+    qty_needed_expr = ExpressionWrapper(
+        F("quantity_required") - F("quantity_have"),
+        output_field=IntegerField(),
+    )
+    items = InventoryItem.objects.annotate(qty_needed_db=qty_needed_expr)
+
+    if query:
+        items = items.filter(item_name__icontains=query)
+
+    if status == "complete":
+        items = items.filter(qty_needed_db__lte=0)
+    elif status == "missing":
+        items = items.filter(qty_needed_db__gt=0)
+    elif status == "out":
+        items = items.filter(quantity_have=0)
+
+    items = list(items)
+    complete_count = sum(1 for item in items if item.quantity_needed == 0)
+    missing_count  = sum(1 for item in items if item.quantity_needed > 0)
+    total_needed   = sum(item.quantity_needed for item in items)
+
+    return render(request, "inventory/inventory_list.html", {
+        "items": items,
+        "query": query,
+        "status": status,
+        "complete_count": complete_count,
+        "missing_count": missing_count,
+        "total_needed": total_needed,
+    })
+
+
 @manager_required
 def inventory_create(request):
     form = InventoryItemForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Item added successfully.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_form.html", {"form": form})
 
 
-@login_required
 @manager_required
 def inventory_update(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
@@ -50,25 +96,26 @@ def inventory_update(request, pk):
 
     if request.method == "POST" and form.is_valid():
         form.save()
+        messages.success(request, "Item updated successfully.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_form.html", {"form": form})
 
 
-@login_required
 @manager_required
 def inventory_delete(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
 
     if request.method == "POST":
         item.delete()
+        messages.success(request, f"\"{item.item_name}\" was deleted.")
         return redirect("inventory_list")
 
     return render(request, "inventory/inventory_confirm_delete.html", {"item": item})
 
 
-@login_required
 @manager_required
+<<<<<<< HEAD
 def daily_report(request):
     queryset = InventoryItem.objects.all().order_by("item_name")
     formset = InventoryQuantityFormSet(request.POST or None, queryset=queryset)
@@ -86,6 +133,42 @@ def daily_report(request):
     ) if request.method == "POST" else 0
 
     progress_percentage = int((valid_fields / total_fields) * 100) if total_fields > 0 else 0
+=======
+def submit_daily_report(request):
+    if request.method == "POST":
+        report = DailyReport.objects.create(submitted_by=request.user)
+
+        items = InventoryItem.objects.all()
+        DailyReportSnapshot.objects.bulk_create([
+            DailyReportSnapshot(
+                report=report,
+                item_name=item.item_name,
+                category=item.category,
+                quantity_required=item.quantity_required,
+                quantity_have=item.quantity_have,
+                quantity_needed=item.quantity_needed,
+                status=item.status,
+            )
+            for item in items
+        ])
+
+        messages.success(request, "Daily report submitted.")
+        return redirect("daily_report")
+
+    return redirect("inventory_list")
+
+
+@manager_required
+def daily_report(request):
+    selected_date = request.GET.get("date", "")
+
+    reports = DailyReport.objects.all().order_by("-submitted_at")
+
+    if selected_date:
+        reports = reports.filter(submitted_at__date=selected_date)
+
+    items = InventoryItem.objects.all()
+>>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
 
     out_of_stock = []
     low_stock = []
@@ -99,9 +182,11 @@ def daily_report(request):
         else:
             complete.append(item)
 
-    latest_report = DailyReport.objects.order_by("-submitted_at").first()
+    total_issues = len(out_of_stock) + len(low_stock)
+    latest_report = reports.first()
 
     return render(request, "inventory/daily_report.html", {
+<<<<<<< HEAD
         "formset": formset,
         "items": queryset,
         "out_of_stock": out_of_stock,
@@ -109,10 +194,35 @@ def daily_report(request):
         "complete": complete,
         "latest_report": latest_report,
         "progress": progress_percentage,
+=======
+        "reports": reports,
+        "latest_report": latest_report,
+        "selected_date": selected_date,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "complete": complete,
+        "total_issues": total_issues,
+    })
+
+@manager_required
+def daily_report_detail(request, pk):
+    report = get_object_or_404(DailyReport, pk=pk)
+    snapshots = report.snapshots.all()
+    out_of_stock = [s for s in snapshots if s.quantity_have == 0]
+    low_stock    = [s for s in snapshots if s.quantity_have > 0 and s.quantity_needed > 0]
+    complete     = [s for s in snapshots if s.quantity_needed == 0]
+    total_issues = len(out_of_stock) + len(low_stock)
+
+    return render(request, "inventory/daily_report_detail.html", {
+        "report": report,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "complete": complete,
+        "total_issues": total_issues,
+>>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
     })
 
 
-@login_required
 @manager_required
 def api_docs(request):
     return render(request, "inventory/api_docs.html")
@@ -121,3 +231,4 @@ def api_docs(request):
 class InventoryItemViewSet(viewsets.ModelViewSet):
     queryset = InventoryItem.objects.all()
     serializer_class = InventoryItemSerializer
+    permission_classes = [IsAdminUser]

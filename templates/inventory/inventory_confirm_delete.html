@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Delete Item{% endblock %}
+
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center">
 
@@ -33,13 +35,13 @@
 
             <form method="post">
                 {% csrf_token %}
-                <button class="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-xl font-semibold text-white">
+                <button class="w-32 h-14 bg-red-500 hover:bg-red-600 px-8 py-3 rounded-xl font-semibold text-white">
                     Delete
                 </button>
             </form>
 
             <a href="{% url 'inventory_list' %}"
-               class="rounded-xl bg-slate-800 px-8 py-3 font-semibold text-slate-200 transition hover:bg-slate-700">
+               class="w-32 h-14 flex items-center justify-center rounded-xl bg-slate-800 px-8 py-3 font-semibold text-slate-200 transition hover:bg-slate-700">
                 Cancel
             </a>
 

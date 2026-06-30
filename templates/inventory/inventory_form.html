@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{% if form.instance.pk %}Edit Item{% else %}Add Item{% endif %}{% endblock %}
+
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center px-4">
 
@@ -19,8 +21,16 @@
             </p>
         </div>
 
-        <form method="post" class="space-y-6">
+        <form method="post" class="space-y-6" novalidate>
             {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                <p class="font-semibold text-red-400">
+                    Unable to save item. Please correct the errors below.
+                </p>
+            </div>
+            {% endif %}
 
             {% for field in form %}
                 <div>

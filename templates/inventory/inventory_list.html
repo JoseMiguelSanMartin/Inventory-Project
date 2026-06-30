@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Inventory{% endblock %}
+
 {% block content %}
 <section class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
     <div>
@@ -16,23 +18,24 @@
         </p>
     </div>
 
-    {% if request.user.is_staff %}
-    <a href="{% url 'inventory_create' %}"
+    <div class="flex items-center gap-4">
+        <a href="{% url 'inventory_create' %}"
         class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
-        + Add Item
-    </a>
-    <form method="post" action="{% url 'submit_daily_report' %}">
-        {% csrf_token %}
-        <button type="submit"
-            class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
-            Submit Today's Report
-        </button>
-    </form>
-    {% endif %}
+            + Add Item
+        </a>
+
+        <form method="post" action="{% url 'submit_daily_report' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
+                Submit Today's Report
+            </button>
+        </form>
+    </div>
 
 </section>
 
-<section class="mb-8 grid gap-6 md:grid-cols-3">
+<section class="mb-8 grid gap-6 md:grid-cols-4">
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
         <p class="text-slate-400">Total Items</p>
         <h2 class="mt-2 text-4xl font-bold text-white">
@@ -41,25 +44,57 @@
     </div>
 
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <p class="text-slate-400">Inventory</p>
-        <h2 class="mt-2 text-4xl font-bold text-blue-400">
-            Active
+        <p class="text-slate-400">Complete</p>
+        <h2 class="mt-2 text-4xl font-bold text-green-400">
+            {{ complete_count }}
         </h2>
     </div>
 
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <p class="text-slate-400">Status</p>
+        <p class="text-slate-400">Missing</p>
         <h2 class="mt-2 text-4xl font-bold text-orange-400">
-            Review
+            {{ missing_count }}
+        </h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Total Needed</p>
+        <h2 class="mt-2 text-4xl font-bold text-red-400">
+            {{ total_needed }}
         </h2>
     </div>
 </section>
 
 <section class="mb-6">
     <form method="get">
+        {# Preserve the active status filter when submitting a new search #}
+        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
         <input type="text" name="q" value="{{ query }}" placeholder="Search inventory..."
             class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
     </form>
+</section>
+
+<section class="mb-6 flex flex-wrap gap-3">
+    {# Preserve the search query when switching status filters #}
+    <a href="?q={{ query }}"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if not status %}bg-slate-500{% else %}bg-slate-700 hover:bg-slate-600{% endif %}">
+        All
+    </a>
+
+    <a href="?q={{ query }}&status=complete"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'complete' %}bg-green-600{% else %}bg-green-500 hover:bg-green-600{% endif %}">
+        Complete
+    </a>
+
+    <a href="?q={{ query }}&status=missing"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'missing' %}bg-orange-600{% else %}bg-orange-500 hover:bg-orange-600{% endif %}">
+        Missing
+    </a>
+
+    <a href="?q={{ query }}&status=out"
+       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'out' %}bg-red-600{% else %}bg-red-500 hover:bg-red-600{% endif %}">
+        Out of Stock
+    </a>
 </section>
 
 <section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
