@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from rest_framework import viewsets
 
-from .forms import SignUpForm, InventoryItemForm
+from .forms import SignUpForm, InventoryItemForm, InventoryQuantityFormSet
 from .models import InventoryItem, DailyReport
 from .serializers import InventoryItemSerializer
 
@@ -69,24 +69,29 @@ def inventory_delete(request, pk):
 
 @login_required
 @manager_required
-def submit_daily_report(request):
-    if request.method == "POST":
-        DailyReport.objects.create(submitted_by=request.user)
-        return redirect("daily_report")
-
-    return redirect("inventory_list")
-
-
-@login_required
-@manager_required
 def daily_report(request):
-    items = InventoryItem.objects.all()
+    queryset = InventoryItem.objects.all().order_by("item_name")
+    formset = InventoryQuantityFormSet(request.POST or None, queryset=queryset)
+
+    if request.method == "POST":
+        if formset.is_valid():
+            formset.save()
+            DailyReport.objects.create(submitted_by=request.user)
+            return redirect("daily_report")
+    
+    total_fields = len(formset.forms)
+    valid_fields = sum(
+        1 for form in formset.forms
+        if form.is_bound and not form.errors
+    ) if request.method == "POST" else 0
+
+    progress_percentage = int((valid_fields / total_fields) * 100) if total_fields > 0 else 0
 
     out_of_stock = []
     low_stock = []
     complete = []
 
-    for item in items:
+    for item in queryset:
         if item.quantity_have == 0:
             out_of_stock.append(item)
         elif item.quantity_needed > 0:
@@ -97,11 +102,13 @@ def daily_report(request):
     latest_report = DailyReport.objects.order_by("-submitted_at").first()
 
     return render(request, "inventory/daily_report.html", {
-        "items": items,
+        "formset": formset,
+        "items": queryset,
         "out_of_stock": out_of_stock,
         "low_stock": low_stock,
         "complete": complete,
         "latest_report": latest_report,
+        "progress": progress_percentage,
     })
 
 
