@@ -19,18 +19,19 @@
     </div>
 
     <div class="flex items-center gap-4">
+        {% if request.user.is_staff %}
         <a href="{% url 'inventory_create' %}"
-        class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
+            class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
             + Add Item
         </a>
+        {% endif %}
 
-        <form method="post" action="{% url 'submit_daily_report' %}" class="m-0">
-            {% csrf_token %}
-            <button type="submit"
-                    class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
-                Submit Today's Report
-            </button>
-        </form>
+        {% if request.user.is_staff %}
+        <a href="{% url 'daily_report' %}"
+            class="rounded-xl bg-green-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-green-600">
+            Fill Daily Report
+        </a>
+        {% endif %}
     </div>
 
 </section>
@@ -77,22 +78,22 @@
 <section class="mb-6 flex flex-wrap gap-3">
     {# Preserve the search query when switching status filters #}
     <a href="?q={{ query }}"
-       class="rounded-xl px-4 py-2 font-semibold text-white {% if not status %}bg-slate-500{% else %}bg-slate-700 hover:bg-slate-600{% endif %}">
+        class="rounded-xl px-4 py-2 font-semibold text-white {% if not status %}bg-slate-500{% else %}bg-slate-700 hover:bg-slate-600{% endif %}">
         All
     </a>
 
     <a href="?q={{ query }}&status=complete"
-       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'complete' %}bg-green-600{% else %}bg-green-500 hover:bg-green-600{% endif %}">
+        class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'complete' %}bg-green-600{% else %}bg-green-500 hover:bg-green-600{% endif %}">
         Complete
     </a>
 
     <a href="?q={{ query }}&status=missing"
-       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'missing' %}bg-orange-600{% else %}bg-orange-500 hover:bg-orange-600{% endif %}">
+        class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'missing' %}bg-orange-600{% else %}bg-orange-500 hover:bg-orange-600{% endif %}">
         Missing
     </a>
 
     <a href="?q={{ query }}&status=out"
-       class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'out' %}bg-red-600{% else %}bg-red-500 hover:bg-red-600{% endif %}">
+        class="rounded-xl px-4 py-2 font-semibold text-white {% if status == 'out' %}bg-red-600{% else %}bg-red-500 hover:bg-red-600{% endif %}">
         Out of Stock
     </a>
 </section>
