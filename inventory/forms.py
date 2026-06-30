@@ -26,3 +26,14 @@ class InventoryItemForm(forms.ModelForm):
                 "placeholder": "Example: 1"
             }),
         }
+
+InventoryQuantityFormSet = modelformset_factory(
+    InventoryItem,
+    fields=['quantity_have'],
+    extra=0,
+    widgets={
+        'quantity_have': forms.NumberInput(attrs={
+            "class": "w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white focus:border-blue-500 focus:outline-none",
+        }),
+    },
+)
