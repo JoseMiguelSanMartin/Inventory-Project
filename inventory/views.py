@@ -6,13 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
 
-<<<<<<< HEAD
 from .forms import SignUpForm, InventoryItemForm, InventoryQuantityFormSet
-from .models import InventoryItem, DailyReport
-=======
-from .forms import SignUpForm, InventoryItemForm
 from .models import InventoryItem, DailyReport, DailyReportSnapshot
->>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
 from .serializers import InventoryItemSerializer
 
 
@@ -64,8 +59,8 @@ def inventory_list(request):
 
     items = list(items)
     complete_count = sum(1 for item in items if item.quantity_needed == 0)
-    missing_count  = sum(1 for item in items if item.quantity_needed > 0)
-    total_needed   = sum(item.quantity_needed for item in items)
+    missing_count = sum(1 for item in items if item.quantity_needed > 0)
+    total_needed = sum(item.quantity_needed for item in items)
 
     return render(request, "inventory/inventory_list.html", {
         "items": items,
@@ -115,17 +110,35 @@ def inventory_delete(request, pk):
 
 
 @manager_required
-<<<<<<< HEAD
 def daily_report(request):
     queryset = InventoryItem.objects.all().order_by("item_name")
     formset = InventoryQuantityFormSet(request.POST or None, queryset=queryset)
 
     if request.method == "POST":
         if formset.is_valid():
-            formset.save()
-            DailyReport.objects.create(submitted_by=request.user)
+            updated_items = formset.save()
+
+            report = DailyReport.objects.create(submitted_by=request.user)
+
+            all_items = InventoryItem.objects.all()
+            DailyReportSnapshot.objects.bulk_create([
+                DailyReportSnapshot(
+                    report=report,
+                    item_name=item.item_name,
+                    category=item.category,
+                    quantity_required=item.quantity_required,
+                    quantity_have=item.quantity_have,
+                    quantity_needed=item.quantity_needed,
+                    status=item.status,
+                )
+                for item in all_items
+            ])
+
+            messages.success(request, "Daily report submitted successfully.")
             return redirect("daily_report")
-    
+        else:
+            messages.error(request, "Please fix the errors below before submitting.")
+
     total_fields = len(formset.forms)
     valid_fields = sum(
         1 for form in formset.forms
@@ -133,42 +146,12 @@ def daily_report(request):
     ) if request.method == "POST" else 0
 
     progress_percentage = int((valid_fields / total_fields) * 100) if total_fields > 0 else 0
-=======
-def submit_daily_report(request):
-    if request.method == "POST":
-        report = DailyReport.objects.create(submitted_by=request.user)
 
-        items = InventoryItem.objects.all()
-        DailyReportSnapshot.objects.bulk_create([
-            DailyReportSnapshot(
-                report=report,
-                item_name=item.item_name,
-                category=item.category,
-                quantity_required=item.quantity_required,
-                quantity_have=item.quantity_have,
-                quantity_needed=item.quantity_needed,
-                status=item.status,
-            )
-            for item in items
-        ])
-
-        messages.success(request, "Daily report submitted.")
-        return redirect("daily_report")
-
-    return redirect("inventory_list")
-
-
-@manager_required
-def daily_report(request):
     selected_date = request.GET.get("date", "")
-
     reports = DailyReport.objects.all().order_by("-submitted_at")
-
     if selected_date:
         reports = reports.filter(submitted_at__date=selected_date)
-
-    items = InventoryItem.objects.all()
->>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
+    latest_report = reports.first()
 
     out_of_stock = []
     low_stock = []
@@ -183,10 +166,8 @@ def daily_report(request):
             complete.append(item)
 
     total_issues = len(out_of_stock) + len(low_stock)
-    latest_report = reports.first()
 
     return render(request, "inventory/daily_report.html", {
-<<<<<<< HEAD
         "formset": formset,
         "items": queryset,
         "out_of_stock": out_of_stock,
@@ -194,23 +175,19 @@ def daily_report(request):
         "complete": complete,
         "latest_report": latest_report,
         "progress": progress_percentage,
-=======
         "reports": reports,
-        "latest_report": latest_report,
         "selected_date": selected_date,
-        "out_of_stock": out_of_stock,
-        "low_stock": low_stock,
-        "complete": complete,
         "total_issues": total_issues,
     })
+
 
 @manager_required
 def daily_report_detail(request, pk):
     report = get_object_or_404(DailyReport, pk=pk)
     snapshots = report.snapshots.all()
     out_of_stock = [s for s in snapshots if s.quantity_have == 0]
-    low_stock    = [s for s in snapshots if s.quantity_have > 0 and s.quantity_needed > 0]
-    complete     = [s for s in snapshots if s.quantity_needed == 0]
+    low_stock = [s for s in snapshots if s.quantity_have > 0 and s.quantity_needed > 0]
+    complete = [s for s in snapshots if s.quantity_needed == 0]
     total_issues = len(out_of_stock) + len(low_stock)
 
     return render(request, "inventory/daily_report_detail.html", {
@@ -219,7 +196,6 @@ def daily_report_detail(request, pk):
         "low_stock": low_stock,
         "complete": complete,
         "total_issues": total_issues,
->>>>>>> 38f05c3877e6d9e653851bb873be117e8c05fe01
     })
 
 
