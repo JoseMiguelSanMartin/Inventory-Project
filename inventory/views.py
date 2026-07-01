@@ -12,7 +12,14 @@ from .serializers import InventoryItemSerializer
 
 
 def _is_manager(user):
-    return user.is_active and user.is_staff
+    return (
+        user.is_active
+        and user.is_authenticated
+        and (
+            user.is_superuser
+            or user.groups.filter(name="Manager").exists()
+        )
+    )
 
 manager_required = user_passes_test(_is_manager, login_url="login")
 
