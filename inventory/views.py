@@ -115,6 +115,34 @@ def inventory_delete(request, pk):
 
     return render(request, "inventory/inventory_confirm_delete.html", {"item": item})
 
+@login_required
+def submit_daily_report(request):
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, "Only staff can submit daily reports.")
+        return redirect("inventory_list")
+
+    if request.method == "POST":
+        report = DailyReport.objects.create(submitted_by=request.user)
+
+        all_items = InventoryItem.objects.all()
+
+        DailyReportSnapshot.objects.bulk_create([
+            DailyReportSnapshot(
+                report=report,
+                item_name=item.item_name,
+                category=item.category,
+                quantity_required=item.quantity_required,
+                quantity_have=item.quantity_have,
+                quantity_needed=item.quantity_needed,
+                status=item.status,
+            )
+            for item in all_items
+        ])
+
+        messages.success(request, "Daily report submitted successfully.")
+        return redirect("inventory_list")
+
+    return redirect("inventory_list")
 
 @manager_required
 def daily_report(request):
