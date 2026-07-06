@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{% if form.instance.pk %}Edit Item{% else %}Add Item{% endif %}{% endblock %}
+
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center px-4">
 
