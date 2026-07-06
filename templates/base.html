@@ -1,5 +1,6 @@
-<html lang="en">
+{% load inventory_tags %}
 
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Inventory App{% endblock %}</title>
@@ -16,42 +17,50 @@
 
             {% with url_name=request.resolver_match.url_name %}
             <div class="flex items-center gap-6 text-sm font-medium">
+
                 {% if user.is_authenticated %}
-                <a href="{% url 'inventory_list' %}"
-                   class="transition {% if url_name == 'inventory_list' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
-                    Inventory
-                </a>
 
-                {% if user.is_staff %}
-                <a href="{% url 'inventory_create' %}"
-                   class="transition {% if url_name == 'inventory_create' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
-                    Add Item
-                </a>
+                    <a href="{% url 'inventory_list' %}"
+                       class="transition {% if url_name == 'inventory_list' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                        Inventory
+                    </a>
 
-                <a href="{% url 'daily_report' %}"
-                   class="transition {% if url_name == 'daily_report' or url_name == 'daily_report_detail' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
-                    Daily Report
-                </a>
+                    {% if user.is_staff %}
+                        <a href="{% url 'inventory_create' %}"
+                           class="transition {% if url_name == 'inventory_create' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                            Add Item
+                        </a>
+                    {% endif %}
 
-                <a href="{% url 'signup' %}"
-                   class="transition {% if url_name == 'signup' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
-                    Create User
-                </a>
-                {% endif %}
+                    {% if user|has_group:"Manager" or user.is_superuser %}
+                        <a href="{% url 'daily_report' %}"
+                           class="transition {% if url_name == 'daily_report' or url_name == 'daily_report_detail' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                            Reports
+                        </a>
 
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button type="submit"
-                        class="rounded-xl bg-red-500 px-5 py-2.5 font-semibold text-white transition hover:bg-red-600">
-                        Logout
-                    </button>
-                </form>
+                        <a href="{% url 'signup' %}"
+                           class="transition {% if url_name == 'signup' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                            Create User
+                        </a>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="rounded-xl bg-red-500 px-5 py-2.5 font-semibold text-white transition hover:bg-red-600">
+                            Logout
+                        </button>
+                    </form>
+
                 {% else %}
-                <a href="{% url 'login' %}"
-                   class="transition {% if url_name == 'login' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
-                    Login
-                </a>
+
+                    <a href="{% url 'login' %}"
+                       class="transition {% if url_name == 'login' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                        Login
+                    </a>
+
                 {% endif %}
+
             </div>
             {% endwith %}
 
@@ -59,7 +68,6 @@
     </nav>
 
     <main class="mx-auto max-w-6xl px-6 py-10">
-
         {% if messages %}
         <div class="mb-6 space-y-3">
             {% for message in messages %}
@@ -69,7 +77,10 @@
                 {% elif message.tags == 'warning' %}border-orange-500/30 bg-orange-500/10 text-orange-300
                 {% else %}border-blue-500/30 bg-blue-500/10 text-blue-300{% endif %}">
                 <span>{{ message }}</span>
-                <button onclick="this.parentElement.remove()" class="ml-4 text-lg leading-none opacity-60 hover:opacity-100">&times;</button>
+                <button onclick="this.parentElement.remove()"
+                        class="ml-4 text-lg leading-none opacity-60 hover:opacity-100">
+                    &times;
+                </button>
             </div>
             {% endfor %}
         </div>
@@ -78,5 +89,4 @@
         {% block content %}{% endblock %}
     </main>
 </body>
-
 </html>
