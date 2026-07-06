@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section class="text-center py-24">
+    <p class="text-blue-400 uppercase tracking-[0.3em] text-sm">
+        Inventory Management System
+    </p>
+
+    <h1 class="mt-6 text-6xl font-bold">
+        Keep Track of
+        <span class="text-blue-400">Everything.</span>
+    </h1>
+
+    <div class="mt-10 flex justify-center gap-4">
+        <a href="{% url 'login' %}"
+           class="bg-blue-500 hover:bg-blue-600 px-8 py-4 rounded-xl font-semibold">
+            Login
+        </a>
+
+        <a href="{% url 'signup' %}"
+           class="border border-slate-700 hover:border-blue-400 px-8 py-4 rounded-xl">
+            Create Account
+        </a>
+    </div>
+</section>
+{% endblock %}

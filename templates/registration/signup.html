@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="flex min-h-[70vh] items-center justify-center px-4">
+
+    <section class="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-10 shadow-2xl">
+
+        <div class="mb-8 text-center">
+            <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-2xl">
+                👤
+            </div>
+
+            <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
+                New User
+            </p>
+
+            <h1 class="mt-3 text-4xl font-bold text-white">
+                Create Account
+            </h1>
+
+            <p class="mt-2 text-slate-400">
+                Create an account to access the inventory system.
+            </p>
+        </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="mb-2 block text-sm font-semibold text-slate-200">
+                        {{ field.label }}
+                    </label>
+
+                    <input
+                        type="{{ field.field.widget.input_type }}"
+                        name="{{ field.html_name }}"
+                        id="{{ field.id_for_label }}"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                        required>
+
+                    {% if field.help_text %}
+                        <p class="mt-2 text-xs leading-relaxed text-slate-500">
+                            {{ field.help_text }}
+                        </p>
+                    {% endif %}
+
+                    {% if field.errors %}
+                        <p class="mt-2 text-sm text-red-400">
+                            {{ field.errors|striptags }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit"
+                    class="w-full rounded-xl bg-blue-500 px-6 py-3 font-semibold text-white transition hover:bg-blue-600">
+                Create Account
+            </button>
+        </form>
+
+        <p class="mt-8 text-center text-slate-400">
+            Already have an account?
+            <a href="{% url 'login' %}" class="font-semibold text-blue-400 hover:text-blue-300">
+                Login
+            </a>
+        </p>
+
+    </section>
+
+</div>
+{% endblock %}
