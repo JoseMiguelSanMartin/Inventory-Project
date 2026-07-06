@@ -1,74 +1,99 @@
 {% extends "base.html" %}
+{% load inventory_tags %}
 
 {% block content %}
 <section class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
     <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
-            Inventory Dashboard
-        </p>
-
-        <h1 class="mt-2 text-5xl font-bold text-white">
-            Equipment Inventory
-        </h1>
-
-        <p class="mt-2 text-slate-400">
-            Track what you have and what still needs to be collected.
-        </p>
+        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">Inventory Dashboard</p>
+        <h1 class="mt-2 text-5xl font-bold text-white">Equipment Inventory</h1>
+        <p class="mt-2 text-slate-400">Track what you have and what still needs to be collected.</p>
     </div>
 
-    <a href="{% url 'inventory_create' %}"
-       class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
-        + Add Item
-    </a>
-    <form method="post" action="{% url 'submit_daily_report' %}">
-        {% csrf_token %}
-        <button type="submit"
-                class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600">
-            Submit Today's Report
-        </button>
-    </form>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+        {% if request.user.is_staff %}
+        <a href="{% url 'inventory_create' %}"
+           class="rounded-xl bg-blue-500 px-6 py-3 text-center font-semibold text-white shadow-lg hover:bg-blue-600">
+            + Add Item
+        </a>
 
+        <form method="post" action="{% url 'submit_daily_report' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="rounded-xl bg-green-500 px-6 py-3 font-semibold text-white hover:bg-green-600">
+                Submit Today's Report
+            </button>
+        </form>
+        {% endif %}
+    </div>
 </section>
 
-<section class="mb-8 grid gap-6 md:grid-cols-3">
+<section class="mb-8 grid gap-6 md:grid-cols-4">
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
         <p class="text-slate-400">Total Items</p>
-        <h2 class="mt-2 text-4xl font-bold text-white">
-            {{ items|length }}
-        </h2>
+        <h2 class="mt-2 text-4xl font-bold text-white">{{ items|length }}</h2>
     </div>
 
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <p class="text-slate-400">Inventory</p>
-        <h2 class="mt-2 text-4xl font-bold text-blue-400">
-            Active
-        </h2>
+        <p class="text-slate-400">Complete</p>
+        <h2 class="mt-2 text-4xl font-bold text-green-400">{{ complete_count }}</h2>
     </div>
 
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-        <p class="text-slate-400">Status</p>
-        <h2 class="mt-2 text-4xl font-bold text-orange-400">
-            Review
-        </h2>
+        <p class="text-slate-400">Missing</p>
+        <h2 class="mt-2 text-4xl font-bold text-orange-400">{{ missing_count }}</h2>
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
+        <p class="text-slate-400">Total Needed</p>
+        <h2 class="mt-2 text-4xl font-bold text-red-400">{{ total_needed }}</h2>
     </div>
 </section>
 
 <section class="mb-6">
-    <input
-        type="text"
-        placeholder="Search inventory..."
-        class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
+    <form method="get" class="flex flex-col gap-4 md:flex-row">
+        <input type="text"
+               name="q"
+               value="{{ query }}"
+               placeholder="Search inventory..."
+               class="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none md:w-80">
+
+        {% if status %}
+        <input type="hidden" name="status" value="{{ status }}">
+        {% endif %}
+    </form>
+</section>
+
+<section class="mb-6 flex flex-wrap gap-3">
+    <a href="{% url 'inventory_list' %}"
+       class="rounded-xl bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-600">
+        All
+    </a>
+
+    <a href="?status=complete"
+       class="rounded-xl bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-600">
+        Complete
+    </a>
+
+    <a href="?status=missing"
+       class="rounded-xl bg-orange-500 px-4 py-2 font-semibold text-white hover:bg-orange-600">
+        Missing
+    </a>
+
+    <a href="?status=out"
+       class="rounded-xl bg-red-500 px-4 py-2 font-semibold text-white hover:bg-red-600">
+        Out of Stock
+    </a>
 </section>
 
 <section class="rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
-    <div class="overflow-x-auto">
+    <div class="hidden overflow-x-auto md:block">
         <table class="w-full text-left">
             <thead class="border-b border-slate-800 text-sm uppercase text-slate-400">
                 <tr>
                     <th class="px-6 py-4">Item</th>
                     <th class="px-6 py-4">Required</th>
                     <th class="px-6 py-4">Have</th>
-                    <th class="px-6 py-4">Need</th>
+                    <th class="px-6 py-4">Progress</th>
                     <th class="px-6 py-4">Actions</th>
                 </tr>
             </thead>
@@ -76,64 +101,56 @@
             <tbody class="divide-y divide-slate-800">
                 {% for item in items %}
                 <tr class="hover:bg-slate-800/60">
-                    <td class="px-6 py-4 font-semibold text-white">
-                        {{ item.item_name }}
-                    </td>
+                    <td class="px-6 py-4 font-semibold text-white">{{ item.item_name }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_required }}</td>
+                    <td class="px-6 py-4 text-slate-300">{{ item.quantity_have }}</td>
 
-                    <td class="px-6 py-4 text-slate-300">
-                        {{ item.quantity_required }}
-                    </td>
+                    <td class="px-6 py-4">
+                        {% with percent=item.quantity_have|percentage:item.quantity_required %}
+                        <div class="min-w-[150px]">
+                            <div class="mb-1 flex justify-between text-xs text-slate-400">
+                                <span>{{ percent }}%</span>
 
-                    <td class="px-6 py-4 text-slate-300">
-                        {{ item.quantity_have }}
+                                {% if item.quantity_needed == 0 %}
+                                    <span class="text-green-400">Complete</span>
+                                {% else %}
+                                    <span class="text-orange-400">Need {{ item.quantity_needed }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="h-2 w-full rounded-full bg-slate-800">
+                                <div class="h-2 rounded-full
+                                    {% if item.quantity_needed == 0 %}
+                                        bg-green-500
+                                    {% elif percent >= 50 %}
+                                        bg-orange-500
+                                    {% else %}
+                                        bg-red-500
+                                    {% endif %}"
+                                    style="width: {{ percent }}%;">
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
                     </td>
 
                     <td class="px-6 py-4">
-                        {% if item.quantity_needed == 0 %}
-                            <span class="rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-400">
-                                Complete
-                            </span>
+                        {% if request.user|has_group:"Manager" or request.user.is_superuser %}
+                            <a class="text-blue-400 hover:text-blue-300"
+                               href="{% url 'inventory_update' item.pk %}">Edit</a>
+                            <span class="mx-2 text-slate-600">|</span>
+                            <a class="text-red-400 hover:text-red-300"
+                               href="{% url 'inventory_delete' item.pk %}">Delete</a>
                         {% else %}
-                            <span class="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-400">
-                                Need {{ item.quantity_needed }}
-                            </span>
+                            <span class="text-slate-600">—</span>
                         {% endif %}
                     </td>
-
-                    <td class="px-6 py-4">
-                        <a class="text-blue-400 hover:text-blue-300"
-                           href="{% url 'inventory_update' item.pk %}">
-                            Edit
-                        </a>
-
-                        <span class="mx-2 text-slate-600">|</span>
-
-                        <a class="text-red-400 hover:text-red-300"
-                           href="{% url 'inventory_delete' item.pk %}">
-                            Delete
-                        </a>
-                    </td>
                 </tr>
-
                 {% empty %}
                 <tr>
                     <td colspan="5" class="px-6 py-16 text-center">
-                        <div class="flex flex-col items-center">
-                            <div class="mb-4 text-5xl">📦</div>
-
-                            <h2 class="text-xl font-semibold text-white">
-                                No inventory items found.
-                            </h2>
-
-                            <p class="mt-2 text-slate-400">
-                                Get started by adding your first item.
-                            </p>
-
-                            <a href="{% url 'inventory_create' %}"
-                               class="mt-6 rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
-                                Add Item
-                            </a>
-                        </div>
+                        <h2 class="text-xl font-semibold text-white">No inventory items found</h2>
+                        <p class="mt-2 text-slate-400">Get started by adding your first item.</p>
                     </td>
                 </tr>
                 {% endfor %}
