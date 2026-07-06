@@ -79,8 +79,12 @@ def inventory_list(request):
     })
 
 
-@manager_required
+@login_required
 def inventory_create(request):
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, "Only staff members can add inventory items.")
+        return redirect("inventory_list")
+
     form = InventoryItemForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -88,7 +92,9 @@ def inventory_create(request):
         messages.success(request, "Item added successfully.")
         return redirect("inventory_list")
 
-    return render(request, "inventory/inventory_form.html", {"form": form})
+    return render(request, "inventory/inventory_form.html", {
+        "form": form
+    })
 
 
 @manager_required
