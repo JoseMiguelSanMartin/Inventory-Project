@@ -1,19 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+
 from . import views
 
-router = DefaultRouter()
-router.register("items", views.InventoryItemViewSet)
 
-REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
-    ],
-}
+router = DefaultRouter()
+router.register("items", views.InventoryItemViewSet, basename="inventory-item")
+
 
 urlpatterns = [
     path("", views.inventory_list, name="inventory_list"),
