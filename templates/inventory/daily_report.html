@@ -1,113 +1,480 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <section class="mx-auto max-w-5xl">
     <div class="mb-10">
-        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">Manager Summary</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
+            Daily Report
+        </p>
 
-        <h1 class="mt-3 text-5xl font-bold text-white">
-            Daily Inventory Report
-        </h1>
+```
+    <h1 class="mt-3 text-5xl font-bold text-white">
+        Daily Inventory Report
+    </h1>
 
-        {% if latest_report %}
-            <p class="mt-2 text-slate-400">
-                Submitted by {{ latest_report.submitted_by }}
-                on {{ latest_report.submitted_at|date:"M d, Y - h:i A" }}
-            </p>
-        {% endif %}
+    <p class="mt-3 text-slate-400">
+        Update the current quantities, choose who should receive the report,
+        and confirm the submission.
+    </p>
+
+    {% if latest_report %}
+        <p class="mt-2 text-slate-400">
+            Most recent report submitted by
+            {{ latest_report.submitted_by }}
+            on {{ latest_report.submitted_at|date:"M d, Y - h:i A" }}
+        </p>
+    {% endif %}
+</div>
+
+<form method="get" class="mb-8 flex flex-col gap-4 sm:flex-row">
+    <input
+        type="date"
+        name="date"
+        value="{{ selected_date }}"
+        class="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white"
+    >
+
+    <button
+        type="submit"
+        class="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600"
+    >
+        Filter
+    </button>
+
+    <a
+        href="{% url 'daily_report' %}"
+        class="rounded-xl bg-slate-700 px-5 py-3 text-center font-semibold text-white hover:bg-slate-600"
+    >
+        Clear
+    </a>
+</form>
+
+<div class="mb-8 grid gap-6 md:grid-cols-3">
+    <div class="rounded-2xl border border-red-500/30 bg-slate-900 p-6">
+        <p class="text-slate-400">Out of Stock</p>
+
+        <h2 class="mt-2 text-4xl font-bold text-red-400">
+            {{ out_of_stock|length }}
+        </h2>
     </div>
 
-    <form method="get" class="mb-8 flex flex-col gap-4 sm:flex-row">
-        <input type="date"
-               name="date"
-               value="{{ selected_date }}"
-               class="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white">
+    <div class="rounded-2xl border border-orange-500/30 bg-slate-900 p-6">
+        <p class="text-slate-400">Low Stock</p>
 
-        <button type="submit"
-                class="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white hover:bg-blue-600">
-            Filter
-        </button>
-
-        <a href="{% url 'daily_report' %}"
-           class="rounded-xl bg-slate-700 px-5 py-3 text-center font-semibold text-white hover:bg-slate-600">
-            Clear
-        </a>
-    </form>
-
-    <div class="mb-8 grid gap-6 md:grid-cols-3">
-        <div class="rounded-2xl border border-red-500/30 bg-slate-900 p-6">
-            <p class="text-slate-400">Out of Stock</p>
-            <h2 class="mt-2 text-4xl font-bold text-red-400">{{ out_of_stock|length }}</h2>
-        </div>
-
-        <div class="rounded-2xl border border-orange-500/30 bg-slate-900 p-6">
-            <p class="text-slate-400">Low Stock</p>
-            <h2 class="mt-2 text-4xl font-bold text-orange-400">{{ low_stock|length }}</h2>
-        </div>
-
-        <div class="rounded-2xl border border-green-500/30 bg-slate-900 p-6">
-            <p class="text-slate-400">Complete</p>
-            <h2 class="mt-2 text-4xl font-bold text-green-400">{{ complete|length }}</h2>
-        </div>
+        <h2 class="mt-2 text-4xl font-bold text-orange-400">
+            {{ low_stock|length }}
+        </h2>
     </div>
+
+    <div class="rounded-2xl border border-green-500/30 bg-slate-900 p-6">
+        <p class="text-slate-400">Complete</p>
+
+        <h2 class="mt-2 text-4xl font-bold text-green-400">
+            {{ complete|length }}
+        </h2>
+    </div>
+</div>
+
+<form method="post" id="daily-report-form">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    {% if formset.non_form_errors %}
+        <div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+            {{ formset.non_form_errors }}
+        </div>
+    {% endif %}
 
     <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="mb-4 text-2xl font-bold text-white">
-            Manager Attention Required
-        </h2>
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-white">
+                Inventory Quantities
+            </h2>
 
-        {% if out_of_stock or low_stock %}
-            <ul class="space-y-3">
-                {% for item in out_of_stock %}
-                    <li class="rounded-xl bg-red-500/10 p-4 text-red-300">
-                        {{ item.item_name }} is out of stock.
-                    </li>
-                {% endfor %}
+            <p class="mt-2 text-slate-400">
+                Confirm the amount currently available for every item.
+            </p>
+        </div>
 
-                {% for item in low_stock %}
-                    <li class="rounded-xl bg-orange-500/10 p-4 text-orange-300">
-                        {{ item.item_name }} needs {{ item.quantity_needed }} more.
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-green-400">Everything is stocked.</p>
-        {% endif %}
-    </section>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-slate-700 text-left text-sm uppercase tracking-wide text-slate-400">
+                        <th class="px-4 py-3">Item</th>
+                        <th class="px-4 py-3">Required</th>
+                        <th class="px-4 py-3">Current Quantity</th>
+                        <th class="px-4 py-3">Status</th>
+                    </tr>
+                </thead>
 
-    <section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="mb-4 text-2xl font-bold text-white">Report Summary</h2>
+                <tbody class="divide-y divide-slate-800">
+                    {% for form in formset %}
+                        <tr>
+                            <td class="px-4 py-4">
+                                {{ form.id }}
 
-        <div class="grid gap-4 md:grid-cols-2">
-            <div>
-                <p class="text-slate-400">Total Issues</p>
-                <p class="mt-1 text-2xl font-bold text-white">{{ total_issues }}</p>
-            </div>
+                                <p class="font-semibold text-white">
+                                    {{ form.instance.item_name }}
+                                </p>
 
-            <div>
-                <p class="text-slate-400">Report Status</p>
+                                {% if form.instance.category %}
+                                    <p class="mt-1 text-sm text-slate-400">
+                                        {{ form.instance.category }}
+                                    </p>
+                                {% endif %}
 
-                {% if out_of_stock or low_stock %}
-                    <p class="mt-1 text-2xl font-bold text-orange-400">Needs Review</p>
-                {% else %}
-                    <p class="mt-1 text-2xl font-bold text-green-400">Complete</p>
-                {% endif %}
-            </div>
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </td>
+
+                            <td class="px-4 py-4 text-slate-300">
+                                {{ form.instance.quantity_required }}
+                            </td>
+
+                            <td class="px-4 py-4">
+                                {{ form.quantity_have }}
+
+                                {% if form.quantity_have.errors %}
+                                    <div class="mt-2 text-sm text-red-400">
+                                        {{ form.quantity_have.errors }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td class="px-4 py-4">
+                                {% if form.instance.quantity_have == 0 %}
+                                    <span class="inline-flex rounded-full bg-red-500/10 px-3 py-1 text-sm font-semibold text-red-300">
+                                        Out of stock
+                                    </span>
+                                {% elif form.instance.quantity_needed > 0 %}
+                                    <span class="inline-flex rounded-full bg-orange-500/10 px-3 py-1 text-sm font-semibold text-orange-300">
+                                        Needs {{ form.instance.quantity_needed }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex rounded-full bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-300">
+                                        Complete
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td
+                                colspan="4"
+                                class="px-4 py-10 text-center text-slate-400"
+                            >
+                                No inventory items are available.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </section>
 
     <section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="mb-4 text-2xl font-bold text-white">Report History</h2>
+        <h2 class="text-2xl font-bold text-white">
+            Email Recipient
+        </h2>
 
-        {% for report in reports %}
-            <a href="{% url 'daily_report_detail' report.pk %}"
-               class="mb-3 block rounded-xl bg-slate-950 p-4 text-slate-300 hover:bg-slate-800">
-                Submitted by {{ report.submitted_by }}
-                on {{ report.submitted_at|date:"M d, Y - h:i A" }}
+        <p class="mt-2 text-slate-400">
+            Select the person who should receive this daily report.
+        </p>
+
+        <div class="mt-6">
+            <label
+                for="recipient_email"
+                class="block text-sm font-semibold text-slate-300"
+            >
+                Send report to
+            </label>
+
+            <select
+                id="recipient_email"
+                name="recipient_email"
+                required
+                class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
+            >
+                <option value="">
+                    Select a recipient
+                </option>
+
+                {% for recipient in email_recipients %}
+                    <option
+                        value="{{ recipient.email }}"
+                        {% if selected_recipient == recipient.email %}
+                            selected
+                        {% endif %}
+                    >
+                        {% if recipient.get_full_name %}
+                            {{ recipient.get_full_name }}
+                        {% else %}
+                            {{ recipient.username }}
+                        {% endif %}
+                        — {{ recipient.email }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            {% if not email_recipients %}
+                <p class="mt-3 text-sm text-red-400">
+                    No active users currently have an email address.
+                    Add an email address through Django Admin before submitting.
+                </p>
+            {% endif %}
+        </div>
+
+        <div
+            id="recipient-preview"
+            class="mt-5 hidden rounded-xl border border-blue-500/30 bg-blue-500/10 p-4"
+        >
+            <p class="text-sm text-blue-300">
+                This report will be emailed to:
+            </p>
+
+            <p
+                id="recipient-preview-address"
+                class="mt-1 font-semibold text-white"
+            ></p>
+        </div>
+
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <a
+                href="{% url 'inventory_list' %}"
+                class="rounded-xl bg-slate-700 px-5 py-3 text-center font-semibold text-white hover:bg-slate-600"
+            >
+                Cancel
             </a>
-        {% empty %}
-            <p class="text-slate-400">No reports found.</p>
-        {% endfor %}
+
+            <button
+                type="submit"
+                {% if not email_recipients %}disabled{% endif %}
+                class="rounded-xl bg-green-600 px-5 py-3 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            >
+                Review and Submit Report
+            </button>
+        </div>
     </section>
+</form>
+
+<section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <h2 class="mb-4 text-2xl font-bold text-white">
+        Attention Required
+    </h2>
+
+    {% if out_of_stock or low_stock %}
+        <ul class="space-y-3">
+            {% for item in out_of_stock %}
+                <li class="rounded-xl bg-red-500/10 p-4 text-red-300">
+                    {{ item.item_name }} is out of stock.
+                </li>
+            {% endfor %}
+
+            {% for item in low_stock %}
+                <li class="rounded-xl bg-orange-500/10 p-4 text-orange-300">
+                    {{ item.item_name }} needs
+                    {{ item.quantity_needed }} more.
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-green-400">
+            Everything is stocked.
+        </p>
+    {% endif %}
 </section>
+
+<section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <h2 class="mb-4 text-2xl font-bold text-white">
+        Report Summary
+    </h2>
+
+    <div class="grid gap-4 md:grid-cols-2">
+        <div>
+            <p class="text-slate-400">Total Issues</p>
+
+            <p class="mt-1 text-2xl font-bold text-white">
+                {{ total_issues }}
+            </p>
+        </div>
+
+        <div>
+            <p class="text-slate-400">Report Status</p>
+
+            {% if out_of_stock or low_stock %}
+                <p class="mt-1 text-2xl font-bold text-orange-400">
+                    Needs Review
+                </p>
+            {% else %}
+                <p class="mt-1 text-2xl font-bold text-green-400">
+                    Complete
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <h2 class="mb-4 text-2xl font-bold text-white">
+        Report History
+    </h2>
+
+    {% for report in reports %}
+        <a
+            href="{% url 'daily_report_detail' report.pk %}"
+            class="mb-3 block rounded-xl bg-slate-950 p-4 text-slate-300 hover:bg-slate-800"
+        >
+            Submitted by {{ report.submitted_by }}
+            on {{ report.submitted_at|date:"M d, Y - h:i A" }}
+        </a>
+    {% empty %}
+        <p class="text-slate-400">
+            No reports found.
+        </p>
+    {% endfor %}
+</section>
+```
+
+</section>
+
+<div
+    id="confirmation-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4"
+>
+    <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6">
+        <h2 class="text-2xl font-bold text-white">
+            Confirm Report Submission
+        </h2>
+
+```
+    <p class="mt-3 text-slate-400">
+        The report will be saved and emailed to:
+    </p>
+
+    <p
+        id="confirmation-email"
+        class="mt-4 rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white"
+    ></p>
+
+    <p class="mt-4 text-sm text-slate-400">
+        Check the recipient before completing the submission.
+    </p>
+
+    <div class="mt-6 flex justify-end gap-3">
+        <button
+            type="button"
+            id="cancel-confirmation"
+            class="rounded-xl bg-slate-700 px-4 py-2 font-semibold text-white hover:bg-slate-600"
+        >
+            Go Back
+        </button>
+
+        <button
+            type="button"
+            id="confirm-submission"
+            class="rounded-xl bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700"
+        >
+            Submit and Send
+        </button>
+    </div>
+</div>
+```
+
+</div>
+
+<script>
+    const reportForm = document.getElementById("daily-report-form");
+    const recipientSelect = document.getElementById("recipient_email");
+    const recipientPreview = document.getElementById("recipient-preview");
+    const recipientPreviewAddress = document.getElementById(
+        "recipient-preview-address"
+    );
+    const confirmationModal = document.getElementById(
+        "confirmation-modal"
+    );
+    const confirmationEmail = document.getElementById(
+        "confirmation-email"
+    );
+    const cancelConfirmation = document.getElementById(
+        "cancel-confirmation"
+    );
+    const confirmSubmission = document.getElementById(
+        "confirm-submission"
+    );
+
+    let submissionConfirmed = false;
+
+    function updateRecipientPreview() {
+        if (!recipientSelect) {
+            return;
+        }
+
+        if (recipientSelect.value) {
+            recipientPreviewAddress.textContent = recipientSelect.value;
+            recipientPreview.classList.remove("hidden");
+        } else {
+            recipientPreviewAddress.textContent = "";
+            recipientPreview.classList.add("hidden");
+        }
+    }
+
+    if (recipientSelect) {
+        recipientSelect.addEventListener(
+            "change",
+            updateRecipientPreview
+        );
+
+        updateRecipientPreview();
+    }
+
+    if (reportForm) {
+        reportForm.addEventListener("submit", function (event) {
+            if (submissionConfirmed) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (!recipientSelect || !recipientSelect.value) {
+                recipientSelect.focus();
+                recipientSelect.reportValidity();
+                return;
+            }
+
+            confirmationEmail.textContent = recipientSelect.value;
+
+            confirmationModal.classList.remove("hidden");
+            confirmationModal.classList.add("flex");
+        });
+    }
+
+    if (cancelConfirmation) {
+        cancelConfirmation.addEventListener("click", function () {
+            confirmationModal.classList.add("hidden");
+            confirmationModal.classList.remove("flex");
+        });
+    }
+
+    if (confirmSubmission) {
+        confirmSubmission.addEventListener("click", function () {
+            submissionConfirmed = true;
+            confirmSubmission.disabled = true;
+            confirmSubmission.textContent = "Submitting...";
+
+            reportForm.requestSubmit();
+        });
+    }
+
+    if (confirmationModal) {
+        confirmationModal.addEventListener("click", function (event) {
+            if (event.target === confirmationModal) {
+                confirmationModal.classList.add("hidden");
+                confirmationModal.classList.remove("flex");
+            }
+        });
+    }
+</script>
+
 {% endblock %}
