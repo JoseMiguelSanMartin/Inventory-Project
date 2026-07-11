@@ -1,11 +1,28 @@
 import os
 from pathlib import Path
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "bare-minimum-dev-key"
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "local-development-only-change-before-deployment",
+)
+
+DEBUG = os.environ.get(
+    "DJANGO_DEBUG",
+    "True",
+).lower() == "true"
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "127.0.0.1,localhost",
+    ).split(",")
+    if host.strip()
+]
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -42,7 +59,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
             ],
         },
-    }
+    },
 ]
 
 WSGI_APPLICATION = "inventory_project.wsgi.application"
@@ -55,7 +72,7 @@ DATABASES = {
 }
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "America/Regina"
+TIME_ZONE = "America/Edmonton"
 USE_I18N = True
 USE_TZ = True
 
@@ -74,17 +91,42 @@ REST_FRAMEWORK = {
     ]
 }
 
+
+# Email configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 20
 
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-DAILY_REPORT_RECIPIENT = os.environ.get(
-    "DAILY_REPORT_RECIPIENT",
-    ""
+DEFAULT_FROM_EMAIL = (
+    f"Inventory Reports <{EMAIL_HOST_USER}>"
+    if EMAIL_HOST_USER
+    else "Inventory Reports <no-reply@localhost>"
 )
+
+SITE_URL = os.environ.get(
+    "SITE_URL",
+    "http://127.0.0.1:8000",
+)
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "inventory": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

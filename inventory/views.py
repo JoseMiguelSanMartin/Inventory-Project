@@ -1,13 +1,18 @@
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.core.validators import validate_email
+from django.db import transaction
 from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
@@ -15,6 +20,9 @@ from rest_framework.permissions import IsAdminUser
 from .forms import InventoryItemForm, InventoryQuantityFormSet, SignUpForm
 from .models import DailyReport, DailyReportSnapshot, InventoryItem
 from .serializers import InventoryItemSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 def _is_manager(user):
@@ -28,9 +36,6 @@ def _is_manager(user):
     )
 
 
-manager_required = user_passes_test(_is_manager, login_url="login")
-
-
 def _staff_access_allowed(user):
     return (
         user.is_authenticated
@@ -39,112 +44,102 @@ def _staff_access_allowed(user):
     )
 
 
-def send_daily_report_email(request, report, recipient_email):
-    """
-    Email a saved daily report to the selected recipient.
+manager_required = user_passes_test(_is_manager, login_url="login")
 
-    The application Gmail account remains the sender. When the submitting
-    staff member has an email address, replies are directed to that address.
-    """
+
+def build_report_url(report):
+    report_path = reverse("daily_report_detail", args=[report.pk])
+    return f"{settings.SITE_URL.rstrip('/')}{report_path}"
+
+
+def send_daily_report_email(request, report, recipient_email):
     snapshots = report.snapshots.all().order_by("item_name")
 
     out_of_stock = [
         item for item in snapshots
         if item.quantity_have == 0
     ]
-
     low_stock = [
         item for item in snapshots
         if item.quantity_have > 0 and item.quantity_needed > 0
     ]
-
     complete = [
         item for item in snapshots
         if item.quantity_needed == 0
     ]
-
-    report_url = request.build_absolute_uri(
-        reverse("daily_report_detail", args=[report.pk])
-    )
 
     submitter_name = (
         report.submitted_by.get_full_name()
         or report.submitted_by.username
     )
 
-    report_lines = [
-        "A daily inventory report has been submitted.",
-        "",
-        f"Submitted by: {submitter_name}",
-        f"Submitted at: {report.submitted_at:%B %d, %Y at %I:%M %p}",
-        "",
-        "REPORT SUMMARY",
-        "------------------------------",
-        f"Out of stock: {len(out_of_stock)}",
-        f"Low stock: {len(low_stock)}",
-        f"Complete: {len(complete)}",
-        "",
-    ]
+    context = {
+        "report": report,
+        "submitter_name": submitter_name,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "complete": complete,
+        "report_url": build_report_url(report),
+    }
 
-    if out_of_stock:
-        report_lines.extend([
-            "OUT OF STOCK",
-            "------------------------------",
-        ])
+    text_body = render_to_string(
+        "inventory/emails/daily_report.txt",
+        context,
+    )
+    html_body = render_to_string(
+        "inventory/emails/daily_report.html",
+        context,
+    )
 
-        for item in out_of_stock:
-            report_lines.append(
-                f"- {item.item_name}: "
-                f"Have {item.quantity_have}, "
-                f"Required {item.quantity_required}, "
-                f"Need {item.quantity_needed}"
-            )
+    reply_to = (
+        [request.user.email]
+        if request.user.email
+        else None
+    )
 
-        report_lines.append("")
-
-    if low_stock:
-        report_lines.extend([
-            "LOW STOCK",
-            "------------------------------",
-        ])
-
-        for item in low_stock:
-            report_lines.append(
-                f"- {item.item_name}: "
-                f"Have {item.quantity_have}, "
-                f"Required {item.quantity_required}, "
-                f"Need {item.quantity_needed}"
-            )
-
-        report_lines.append("")
-
-    report_lines.extend([
-        "View the complete report:",
-        report_url,
-    ])
-
-    reply_to = [request.user.email] if request.user.email else None
-
-    email = EmailMessage(
+    email = EmailMultiAlternatives(
         subject=f"Daily Inventory Report - {report.submitted_at:%B %d, %Y}",
-        body="\n".join(report_lines),
+        body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[recipient_email],
         reply_to=reply_to,
     )
-    email.send(fail_silently=False)
+    email.attach_alternative(html_body, "text/html")
+    return email.send(fail_silently=False)
+
+
+def update_email_success(report):
+    report.email_sent = True
+    report.email_sent_at = timezone.now()
+    report.email_error = ""
+    report.save(
+        update_fields=[
+            "email_sent",
+            "email_sent_at",
+            "email_error",
+        ]
+    )
+
+
+def update_email_failure(report, error):
+    report.email_sent = False
+    report.email_error = str(error)
+    report.save(
+        update_fields=[
+            "email_sent",
+            "email_error",
+        ]
+    )
 
 
 def home(request):
     if request.user.is_authenticated:
         return redirect("inventory_list")
-
     return render(request, "inventory/home.html")
 
 
 @manager_required
 def signup(request):
-    """Managers can create users without being logged out of their own account."""
     form = SignUpForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -155,7 +150,11 @@ def signup(request):
         )
         return redirect("inventory_list")
 
-    return render(request, "registration/signup.html", {"form": form})
+    return render(
+        request,
+        "registration/signup.html",
+        {"form": form},
+    )
 
 
 @login_required
@@ -184,28 +183,35 @@ def inventory_list(request):
 
     items = list(items)
 
-    complete_count = sum(1 for item in items if item.quantity_needed == 0)
-    missing_count = sum(1 for item in items if item.quantity_needed > 0)
-    total_needed = sum(item.quantity_needed for item in items)
+    context = {
+        "items": items,
+        "query": query,
+        "status": status,
+        "complete_count": sum(
+            1 for item in items if item.quantity_needed == 0
+        ),
+        "missing_count": sum(
+            1 for item in items if item.quantity_needed > 0
+        ),
+        "total_needed": sum(
+            item.quantity_needed for item in items
+        ),
+    }
 
     return render(
         request,
         "inventory/inventory_list.html",
-        {
-            "items": items,
-            "query": query,
-            "status": status,
-            "complete_count": complete_count,
-            "missing_count": missing_count,
-            "total_needed": total_needed,
-        },
+        context,
     )
 
 
 @login_required
 def inventory_create(request):
     if not _staff_access_allowed(request.user):
-        messages.error(request, "Only staff members can add inventory items.")
+        messages.error(
+            request,
+            "Only staff members can add inventory items.",
+        )
         return redirect("inventory_list")
 
     form = InventoryItemForm(request.POST or None)
@@ -215,13 +221,20 @@ def inventory_create(request):
         messages.success(request, "Item added successfully.")
         return redirect("inventory_list")
 
-    return render(request, "inventory/inventory_form.html", {"form": form})
+    return render(
+        request,
+        "inventory/inventory_form.html",
+        {"form": form},
+    )
 
 
 @manager_required
 def inventory_update(request, pk):
     item = get_object_or_404(InventoryItem, pk=pk)
-    form = InventoryItemForm(request.POST or None, instance=item)
+    form = InventoryItemForm(
+        request.POST or None,
+        instance=item,
+    )
 
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -231,7 +244,10 @@ def inventory_update(request, pk):
     return render(
         request,
         "inventory/inventory_form.html",
-        {"form": form, "item": item},
+        {
+            "form": form,
+            "item": item,
+        },
     )
 
 
@@ -242,7 +258,10 @@ def inventory_delete(request, pk):
     if request.method == "POST":
         item_name = item.item_name
         item.delete()
-        messages.success(request, f'"{item_name}" was deleted.')
+        messages.success(
+            request,
+            f'"{item_name}" was deleted.',
+        )
         return redirect("inventory_list")
 
     return render(
@@ -254,12 +273,11 @@ def inventory_delete(request, pk):
 
 @login_required
 def submit_daily_report(request):
-    """
-    Preserve the old URL without creating a report that has no selected
-    recipient. All report submissions now happen on the daily-report page.
-    """
     if not _staff_access_allowed(request.user):
-        messages.error(request, "Only staff members can submit daily reports.")
+        messages.error(
+            request,
+            "Only staff members can submit daily reports.",
+        )
         return redirect("inventory_list")
 
     messages.info(
@@ -271,12 +289,11 @@ def submit_daily_report(request):
 
 @login_required
 def daily_report(request):
-    """
-    Allow normal staff, managers, and superusers to update inventory,
-    choose an approved recipient, save a report snapshot, and email it.
-    """
     if not _staff_access_allowed(request.user):
-        messages.error(request, "Only staff members can submit daily reports.")
+        messages.error(
+            request,
+            "Only staff members can submit daily reports.",
+        )
         return redirect("inventory_list")
 
     User = get_user_model()
@@ -297,14 +314,21 @@ def daily_report(request):
     selected_recipient = ""
 
     if request.method == "POST":
-        selected_recipient = request.POST.get("recipient_email", "").strip()
+        selected_recipient = request.POST.get(
+            "recipient_email",
+            "",
+        ).strip()
+
         recipient_is_valid = True
 
         try:
             validate_email(selected_recipient)
         except ValidationError:
             recipient_is_valid = False
-            messages.error(request, "Please select a valid email recipient.")
+            messages.error(
+                request,
+                "Please select a valid email recipient.",
+            )
 
         if recipient_is_valid:
             recipient_exists = email_recipients.filter(
@@ -319,23 +343,28 @@ def daily_report(request):
                 )
 
         if recipient_is_valid and formset.is_valid():
-            formset.save()
+            with transaction.atomic():
+                formset.save()
 
-            report = DailyReport.objects.create(submitted_by=request.user)
-            current_items = InventoryItem.objects.all()
-
-            DailyReportSnapshot.objects.bulk_create([
-                DailyReportSnapshot(
-                    report=report,
-                    item_name=item.item_name,
-                    category=item.category,
-                    quantity_required=item.quantity_required,
-                    quantity_have=item.quantity_have,
-                    quantity_needed=item.quantity_needed,
-                    status=item.status,
+                report = DailyReport.objects.create(
+                    submitted_by=request.user,
+                    recipient_email=selected_recipient,
                 )
-                for item in current_items
-            ])
+
+                current_items = InventoryItem.objects.all()
+
+                DailyReportSnapshot.objects.bulk_create([
+                    DailyReportSnapshot(
+                        report=report,
+                        item_name=item.item_name,
+                        category=item.category,
+                        quantity_required=item.quantity_required,
+                        quantity_have=item.quantity_have,
+                        quantity_needed=item.quantity_needed,
+                        status=item.status,
+                    )
+                    for item in current_items
+                ])
 
             try:
                 send_daily_report_email(
@@ -344,19 +373,32 @@ def daily_report(request):
                     recipient_email=selected_recipient,
                 )
             except Exception as error:
+                logger.exception(
+                    "Failed to email daily report %s",
+                    report.pk,
+                )
+                update_email_failure(report, error)
                 messages.warning(
                     request,
-                    "The report was saved, but the email could not be sent. "
-                    f"Email error: {error}",
+                    (
+                        "The report was saved, but the email could not "
+                        "be sent. A manager can retry it from the report."
+                    ),
                 )
             else:
+                update_email_success(report)
                 messages.success(
                     request,
-                    "Daily report submitted and emailed to "
-                    f"{selected_recipient}.",
+                    (
+                        "Daily report submitted and emailed to "
+                        f"{selected_recipient}."
+                    ),
                 )
 
-            return redirect("daily_report_detail", pk=report.pk)
+            return redirect(
+                "daily_report_detail",
+                pk=report.pk,
+            )
 
         if recipient_is_valid and not formset.is_valid():
             messages.error(
@@ -374,7 +416,6 @@ def daily_report(request):
         if request.method == "POST"
         else 0
     )
-
     progress_percentage = (
         int((valid_fields / total_fields) * 100)
         if total_fields > 0
@@ -385,9 +426,12 @@ def daily_report(request):
     reports = DailyReport.objects.all().order_by("-submitted_at")
 
     if selected_date:
-        reports = reports.filter(submitted_at__date=selected_date)
+        reports = reports.filter(
+            submitted_at__date=selected_date
+        )
 
     latest_report = reports.first()
+
     out_of_stock = []
     low_stock = []
     complete = []
@@ -400,45 +444,52 @@ def daily_report(request):
         else:
             complete.append(item)
 
-    total_issues = len(out_of_stock) + len(low_stock)
+    context = {
+        "formset": formset,
+        "items": inventory_queryset,
+        "email_recipients": email_recipients,
+        "selected_recipient": selected_recipient,
+        "out_of_stock": out_of_stock,
+        "low_stock": low_stock,
+        "complete": complete,
+        "latest_report": latest_report,
+        "progress": progress_percentage,
+        "reports": reports,
+        "selected_date": selected_date,
+        "total_issues": len(out_of_stock) + len(low_stock),
+    }
 
     return render(
         request,
         "inventory/daily_report.html",
-        {
-            "formset": formset,
-            "items": inventory_queryset,
-            "email_recipients": email_recipients,
-            "selected_recipient": selected_recipient,
-            "out_of_stock": out_of_stock,
-            "low_stock": low_stock,
-            "complete": complete,
-            "latest_report": latest_report,
-            "progress": progress_percentage,
-            "reports": reports,
-            "selected_date": selected_date,
-            "total_issues": total_issues,
-        },
+        context,
     )
 
 
 @login_required
 def daily_report_detail(request, pk):
-    """Staff members can open the detail page linked from the email."""
     if not _staff_access_allowed(request.user):
-        messages.error(request, "Only staff members can view daily reports.")
+        messages.error(
+            request,
+            "Only staff members can view daily reports.",
+        )
         return redirect("inventory_list")
 
     report = get_object_or_404(DailyReport, pk=pk)
     snapshots = report.snapshots.all()
 
-    out_of_stock = [s for s in snapshots if s.quantity_have == 0]
-    low_stock = [
-        s for s in snapshots
-        if s.quantity_have > 0 and s.quantity_needed > 0
+    out_of_stock = [
+        item for item in snapshots
+        if item.quantity_have == 0
     ]
-    complete = [s for s in snapshots if s.quantity_needed == 0]
-    total_issues = len(out_of_stock) + len(low_stock)
+    low_stock = [
+        item for item in snapshots
+        if item.quantity_have > 0 and item.quantity_needed > 0
+    ]
+    complete = [
+        item for item in snapshots
+        if item.quantity_needed == 0
+    ]
 
     return render(
         request,
@@ -448,8 +499,58 @@ def daily_report_detail(request, pk):
             "out_of_stock": out_of_stock,
             "low_stock": low_stock,
             "complete": complete,
-            "total_issues": total_issues,
+            "total_issues": len(out_of_stock) + len(low_stock),
+            "can_resend": _is_manager(request.user),
         },
+    )
+
+
+@manager_required
+def resend_daily_report_email(request, pk):
+    report = get_object_or_404(DailyReport, pk=pk)
+
+    if request.method != "POST":
+        return redirect(
+            "daily_report_detail",
+            pk=report.pk,
+        )
+
+    if not report.recipient_email:
+        messages.error(
+            request,
+            "This report has no saved recipient email address.",
+        )
+        return redirect(
+            "daily_report_detail",
+            pk=report.pk,
+        )
+
+    try:
+        send_daily_report_email(
+            request=request,
+            report=report,
+            recipient_email=report.recipient_email,
+        )
+    except Exception as error:
+        logger.exception(
+            "Failed to resend daily report %s",
+            report.pk,
+        )
+        update_email_failure(report, error)
+        messages.error(
+            request,
+            "The report email could not be resent.",
+        )
+    else:
+        update_email_success(report)
+        messages.success(
+            request,
+            f"Report resent to {report.recipient_email}.",
+        )
+
+    return redirect(
+        "daily_report_detail",
+        pk=report.pk,
     )
 
 

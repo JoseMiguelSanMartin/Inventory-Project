@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+
 class InventoryItem(models.Model):
     ITEM_CHOICES = [
         ("Gloves Set", "Gloves Set"),
@@ -23,7 +24,7 @@ class InventoryItem(models.Model):
         ("Guns", "Guns"),
         ("Battery", "Battery"),
         ("Safety Glasses", "Safety Glasses"),
-        ("New Brushes", "Brushes"),
+        ("New Brushes", "New Brushes"),
         ("Clear Seal Bucket", "Clear Seal Bucket"),
         ("Garbage Bags", "Garbage Bags"),
         ("Heads for Roller", "Heads for Roller"),
@@ -44,21 +45,30 @@ class InventoryItem(models.Model):
     def quantity_needed(self):
         return max(0, self.quantity_required - self.quantity_have)
 
-    def __str__(self):
-        return self.item_name
-    
     @property
     def status(self):
         if self.quantity_have == 0:
             return "Out of Stock"
-        elif self.quantity_needed > 0:
+        if self.quantity_needed > 0:
             return "Low Stock"
         return "Complete"
+
+    def __str__(self):
+        return self.item_name
+
 
 class DailyReport(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE)
     submitted_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
+
+    recipient_email = models.EmailField(blank=True)
+    email_sent = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    email_error = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
 
     def __str__(self):
         return f"Daily Report - {self.submitted_at.date()} by {self.submitted_by}"
@@ -66,10 +76,9 @@ class DailyReport(models.Model):
 
 class DailyReportSnapshot(models.Model):
     """
-    Freezes the state of every InventoryItem at the moment a DailyReport
-    is submitted.  Querying snapshots through a report gives you the
-    historical picture rather than today's live quantities.
+    Stores the state of an inventory item when a report is submitted.
     """
+
     report = models.ForeignKey(
         DailyReport,
         on_delete=models.CASCADE,
@@ -79,8 +88,6 @@ class DailyReportSnapshot(models.Model):
     category = models.CharField(max_length=100, blank=True)
     quantity_required = models.PositiveIntegerField()
     quantity_have = models.PositiveIntegerField()
-
-
     quantity_needed = models.PositiveIntegerField()
     status = models.CharField(max_length=20)
 

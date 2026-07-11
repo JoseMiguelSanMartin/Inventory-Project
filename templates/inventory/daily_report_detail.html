@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="mx-auto max-w-5xl">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <p class="text-sm uppercase tracking-[0.3em] text-blue-400">
+                Saved Report
+            </p>
+            <h1 class="mt-3 text-4xl font-bold text-white">
+                Daily Inventory Report
+            </h1>
+            <p class="mt-2 text-slate-400">
+                Submitted by {{ report.submitted_by }}
+                on {{ report.submitted_at|date:"M d, Y - h:i A" }}
+            </p>
+        </div>
+
+        <a href="{% url 'daily_report' %}"
+           class="rounded-xl bg-slate-700 px-5 py-3 text-center font-semibold text-white hover:bg-slate-600">
+            Back to Reports
+        </a>
+    </div>
+
+    <section class="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-2xl font-bold text-white">Email Delivery</h2>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+                <p class="text-slate-400">Recipient</p>
+                <p class="mt-1 font-semibold text-white">
+                    {{ report.recipient_email|default:"No recipient saved" }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-slate-400">Status</p>
+                {% if report.email_sent %}
+                    <p class="mt-1 font-semibold text-green-400">
+                        Sent
+                        {% if report.email_sent_at %}
+                            on {{ report.email_sent_at|date:"M d, Y - h:i A" }}
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <p class="mt-1 font-semibold text-red-400">Not sent</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if report.email_error and not report.email_sent %}
+            <p class="mt-4 rounded-xl bg-red-500/10 p-4 text-red-300">
+                The last email attempt failed. A manager can retry the delivery.
+            </p>
+        {% endif %}
+
+        {% if can_resend and report.recipient_email %}
+            <form method="post"
+                  action="{% url 'resend_daily_report_email' report.pk %}"
+                  class="mt-5">
+                {% csrf_token %}
+                <button type="submit"
+                        class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
+                    Resend Email
+                </button>
+            </form>
+        {% endif %}
+    </section>
+
+    <div class="mb-8 grid gap-6 md:grid-cols-3">
+        <div class="rounded-2xl border border-red-500/30 bg-slate-900 p-6">
+            <p class="text-slate-400">Out of Stock</p>
+            <p class="mt-2 text-4xl font-bold text-red-400">{{ out_of_stock|length }}</p>
+        </div>
+        <div class="rounded-2xl border border-orange-500/30 bg-slate-900 p-6">
+            <p class="text-slate-400">Low Stock</p>
+            <p class="mt-2 text-4xl font-bold text-orange-400">{{ low_stock|length }}</p>
+        </div>
+        <div class="rounded-2xl border border-green-500/30 bg-slate-900 p-6">
+            <p class="text-slate-400">Complete</p>
+            <p class="mt-2 text-4xl font-bold text-green-400">{{ complete|length }}</p>
+        </div>
+    </div>
+
+    <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="mb-5 text-2xl font-bold text-white">Inventory Snapshot</h2>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-slate-700 text-left text-sm uppercase text-slate-400">
+                        <th class="px-4 py-3">Item</th>
+                        <th class="px-4 py-3">Required</th>
+                        <th class="px-4 py-3">Have</th>
+                        <th class="px-4 py-3">Need</th>
+                        <th class="px-4 py-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for item in out_of_stock %}
+                        {% include "inventory/includes/report_snapshot_row.html" %}
+                    {% endfor %}
+                    {% for item in low_stock %}
+                        {% include "inventory/includes/report_snapshot_row.html" %}
+                    {% endfor %}
+                    {% for item in complete %}
+                        {% include "inventory/includes/report_snapshot_row.html" %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+{% endblock %}
