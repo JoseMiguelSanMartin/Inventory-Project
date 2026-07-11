@@ -130,26 +130,42 @@ def submit_daily_report(request):
         messages.error(request, "Only staff can submit daily reports.")
         return redirect("inventory_list")
 
-    if request.method == "POST":
-        report = DailyReport.objects.create(submitted_by=request.user)
-
-        all_items = InventoryItem.objects.all()
-
-        DailyReportSnapshot.objects.bulk_create([
-            DailyReportSnapshot(
-                report=report,
-                item_name=item.item_name,
-                category=item.category,
-                quantity_required=item.quantity_required,
-                quantity_have=item.quantity_have,
-                quantity_needed=item.quantity_needed,
-                status=item.status,
-            )
-            for item in all_items
-        ])
-
-        messages.success(request, "Daily report submitted successfully.")
+    if request.method != "POST":
         return redirect("inventory_list")
+
+    report = DailyReport.objects.create(
+        submitted_by=request.user
+    )
+
+    all_items = InventoryItem.objects.all()
+
+    DailyReportSnapshot.objects.bulk_create([
+        DailyReportSnapshot(
+            report=report,
+            item_name=item.item_name,
+            category=item.category,
+            quantity_required=item.quantity_required,
+            quantity_have=item.quantity_have,
+            quantity_needed=item.quantity_needed,
+            status=item.status,
+        )
+        for item in all_items
+    ])
+
+    try:
+        send_daily_report_email(request, report)
+        messages.success(
+            request,
+            "Daily report submitted and emailed successfully."
+        )
+    except Exception as error:
+        messages.warning(
+            request,
+            (
+                "The report was saved, but the email could not be sent. "
+                f"Email error: {error}"
+            )
+        )
 
     return redirect("inventory_list")
 
