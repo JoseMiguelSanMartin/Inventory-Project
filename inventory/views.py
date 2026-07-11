@@ -194,7 +194,21 @@ def daily_report(request):
                 for item in all_items
             ])
 
-            messages.success(request, "Daily report submitted successfully.")
+            try:
+                send_daily_report_email(request, report)
+                messages.success(
+                    request,
+                    "Daily report submitted and emailed successfully."
+                )
+            except Exception as error:
+                messages.warning(
+                    request,
+                    (
+                        "The report was saved, but the email could not be sent. "
+                        f"Email error: {error}"
+                    )
+                )
+
             return redirect("daily_report")
         else:
             messages.error(request, "Please fix the errors below before submitting.")
