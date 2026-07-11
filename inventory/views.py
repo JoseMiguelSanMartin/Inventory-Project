@@ -4,7 +4,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
@@ -26,6 +29,86 @@ def _is_manager(user):
 
 manager_required = user_passes_test(_is_manager, login_url="login")
 
+def send_daily_report_email(request, report, recipient_email):
+    snapshots = report.snapshots.all().order_by("item_name")
+
+    out_of_stock = [
+        item for item in snapshots
+        if item.quantity_have == 0
+    ]
+
+    low_stock = [
+        item for item in snapshots
+        if item.quantity_have > 0 and item.quantity_needed > 0
+    ]
+
+    complete = [
+        item for item in snapshots
+        if item.quantity_needed == 0
+    ]
+
+    report_url = request.build_absolute_uri(
+        reverse("daily_report_detail", args=[report.pk])
+    )
+
+    submitter_name = (
+        report.submitted_by.get_full_name()
+        or report.submitted_by.username
+    )
+
+    report_lines = [
+        "A daily inventory report has been submitted.",
+        "",
+        f"Submitted by: {submitter_name}",
+        f"Submitted at: {report.submitted_at:%B %d, %Y at %I:%M %p}",
+        f"Out of stock: {len(out_of_stock)}",
+        f"Low stock: {len(low_stock)}",
+        f"Complete: {len(complete)}",
+        "",
+    ]
+
+    if out_of_stock:
+        report_lines.extend([
+            "OUT OF STOCK",
+            "------------------------------",
+        ])
+
+        for item in out_of_stock:
+            report_lines.append(
+                f"- {item.item_name}: "
+                f"Have {item.quantity_have}, "
+                f"Need {item.quantity_needed}"
+            )
+
+        report_lines.append("")
+
+    if low_stock:
+        report_lines.extend([
+            "LOW STOCK",
+            "------------------------------",
+        ])
+
+        for item in low_stock:
+            report_lines.append(
+                f"- {item.item_name}: "
+                f"Have {item.quantity_have}, "
+                f"Need {item.quantity_needed}"
+            )
+
+        report_lines.append("")
+
+    report_lines.extend([
+        "View the complete report:",
+        report_url,
+    ])
+
+    send_mail(
+        subject=f"Daily Inventory Report - {report.submitted_at:%B %d, %Y}",
+        message="\n".join(report_lines),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[recipient_email],
+        fail_silently=False,
+    )
 
 def home(request):
     if request.user.is_authenticated:
@@ -171,60 +254,129 @@ def submit_daily_report(request):
 
 @manager_required
 def daily_report(request):
+    User = get_user_model()
+
     queryset = InventoryItem.objects.all().order_by("item_name")
-    formset = InventoryQuantityFormSet(request.POST or None, queryset=queryset)
+
+    email_recipients = User.objects.filter(
+        is_active=True,
+        email__isnull=False,
+    ).exclude(
+        email=""
+    ).order_by("first_name", "last_name", "username")
+
+    formset = InventoryQuantityFormSet(
+        request.POST or None,
+        queryset=queryset,
+    )
+
+    selected_recipient = ""
 
     if request.method == "POST":
-        if formset.is_valid():
-            updated_items = formset.save()
+        selected_recipient = request.POST.get(
+            "recipient_email",
+            "",
+        ).strip()
 
-            report = DailyReport.objects.create(submitted_by=request.user)
-
-            all_items = InventoryItem.objects.all()
-            DailyReportSnapshot.objects.bulk_create([
-                DailyReportSnapshot(
-                    report=report,
-                    item_name=item.item_name,
-                    category=item.category,
-                    quantity_required=item.quantity_required,
-                    quantity_have=item.quantity_have,
-                    quantity_needed=item.quantity_needed,
-                    status=item.status,
-                )
-                for item in all_items
-            ])
-
-            try:
-                send_daily_report_email(request, report)
-                messages.success(
-                    request,
-                    "Daily report submitted and emailed successfully."
-                )
-            except Exception as error:
-                messages.warning(
-                    request,
-                    (
-                        "The report was saved, but the email could not be sent. "
-                        f"Email error: {error}"
-                    )
-                )
-
-            return redirect("daily_report")
+        try:
+            validate_email(selected_recipient)
+        except ValidationError:
+            messages.error(
+                request,
+                "Please select a valid email recipient.",
+            )
         else:
-            messages.error(request, "Please fix the errors below before submitting.")
+            # Only allow email addresses belonging to active users.
+            recipient_exists = email_recipients.filter(
+                email__iexact=selected_recipient
+            ).exists()
+
+            if not recipient_exists:
+                messages.error(
+                    request,
+                    "The selected recipient is not an approved user.",
+                )
+
+            elif formset.is_valid():
+                formset.save()
+
+                report = DailyReport.objects.create(
+                    submitted_by=request.user
+                )
+
+                all_items = InventoryItem.objects.all()
+
+                DailyReportSnapshot.objects.bulk_create([
+                    DailyReportSnapshot(
+                        report=report,
+                        item_name=item.item_name,
+                        category=item.category,
+                        quantity_required=item.quantity_required,
+                        quantity_have=item.quantity_have,
+                        quantity_needed=item.quantity_needed,
+                        status=item.status,
+                    )
+                    for item in all_items
+                ])
+
+                try:
+                    send_daily_report_email(
+                        request=request,
+                        report=report,
+                        recipient_email=selected_recipient,
+                    )
+                except Exception as error:
+                    messages.warning(
+                        request,
+                        (
+                            "The report was saved, but the email "
+                            f"could not be sent: {error}"
+                        ),
+                    )
+                else:
+                    messages.success(
+                        request,
+                        (
+                            "Daily report submitted and emailed to "
+                            f"{selected_recipient}."
+                        ),
+                    )
+
+                return redirect("daily_report")
+
+            else:
+                messages.error(
+                    request,
+                    "Please fix the inventory errors before submitting.",
+                )
 
     total_fields = len(formset.forms)
-    valid_fields = sum(
-        1 for form in formset.forms
-        if form.is_bound and not form.errors
-    ) if request.method == "POST" else 0
 
-    progress_percentage = int((valid_fields / total_fields) * 100) if total_fields > 0 else 0
+    valid_fields = (
+        sum(
+            1
+            for form in formset.forms
+            if form.is_bound and not form.errors
+        )
+        if request.method == "POST"
+        else 0
+    )
+
+    progress_percentage = (
+        int((valid_fields / total_fields) * 100)
+        if total_fields > 0
+        else 0
+    )
 
     selected_date = request.GET.get("date", "")
+
     reports = DailyReport.objects.all().order_by("-submitted_at")
+
     if selected_date:
-        reports = reports.filter(submitted_at__date=selected_date)
+        reports = reports.filter(
+            submitted_at__date=selected_date
+        )
+
     latest_report = reports.first()
 
     out_of_stock = []
@@ -241,18 +393,24 @@ def daily_report(request):
 
     total_issues = len(out_of_stock) + len(low_stock)
 
-    return render(request, "inventory/daily_report.html", {
-        "formset": formset,
-        "items": queryset,
-        "out_of_stock": out_of_stock,
-        "low_stock": low_stock,
-        "complete": complete,
-        "latest_report": latest_report,
-        "progress": progress_percentage,
-        "reports": reports,
-        "selected_date": selected_date,
-        "total_issues": total_issues,
-    })
+    return render(
+        request,
+        "inventory/daily_report.html",
+        {
+            "formset": formset,
+            "items": queryset,
+            "email_recipients": email_recipients,
+            "selected_recipient": selected_recipient,
+            "out_of_stock": out_of_stock,
+            "low_stock": low_stock,
+            "complete": complete,
+            "latest_report": latest_report,
+            "progress": progress_percentage,
+            "reports": reports,
+            "selected_date": selected_date,
+            "total_issues": total_issues,
+        },
+    )
 
 
 @manager_required
