@@ -36,15 +36,19 @@
                     Add Item
                 </a>
 
-                {% if user|has_group:"Manager" or user.is_superuser %}
+                {% if user.is_authenticated and user.is_staff %}
 
                     <a href="{% url 'daily_report' %}"
-                       class="{% if url_name == 'daily_report' or url_name == 'daily_report_detail' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                    class="{% if url_name == 'daily_report' or url_name == 'daily_report_detail' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
                         Reports
                     </a>
 
+                {% endif %}
+
+                {% if user|has_group:"Manager" or user.is_superuser %}
+
                     <a href="{% url 'signup' %}"
-                       class="{% if url_name == 'signup' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
+                    class="{% if url_name == 'signup' %}text-white font-semibold{% else %}text-slate-300 hover:text-white{% endif %}">
                         Create User
                     </a>
 

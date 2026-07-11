@@ -252,8 +252,15 @@ def submit_daily_report(request):
 
     return redirect("inventory_list")
 
-@manager_required
+@login_required
 def daily_report(request):
+    if not request.user.is_staff:
+        messages.error(
+            request,
+            "Only staff members can submit daily reports."
+        )
+        return redirect("inventory_list")
+
     User = get_user_model()
 
     queryset = InventoryItem.objects.all().order_by("item_name")
@@ -286,7 +293,6 @@ def daily_report(request):
                 "Please select a valid email recipient.",
             )
         else:
-            # Only allow email addresses belonging to active users.
             recipient_exists = email_recipients.filter(
                 email__iexact=selected_recipient
             ).exists()
