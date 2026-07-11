@@ -3,6 +3,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import ExpressionWrapper, F, IntegerField
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
+from django.core.mail import send_mail
+from django.urls import reverse
 from rest_framework import viewsets
 from rest_framework.permissions import IsAdminUser
 
@@ -238,6 +241,94 @@ def daily_report_detail(request, pk):
         "complete": complete,
         "total_issues": total_issues,
     })
+
+def send_daily_report_email(request, report):
+    """
+    Sends the submitted daily report to the configured manager email.
+    """
+
+    snapshots = report.snapshots.all().order_by("item_name")
+
+    out_of_stock = [
+        item for item in snapshots
+        if item.quantity_have == 0
+    ]
+
+    low_stock = [
+        item for item in snapshots
+        if item.quantity_have > 0 and item.quantity_needed > 0
+    ]
+
+    complete = [
+        item for item in snapshots
+        if item.quantity_needed == 0
+    ]
+
+    report_url = request.build_absolute_uri(
+        reverse("daily_report_detail", args=[report.pk])
+    )
+
+    report_lines = [
+        "A new daily inventory report has been submitted.",
+        "",
+        f"Submitted by: {report.submitted_by.get_full_name() or report.submitted_by.username}",
+        f"Submitted at: {report.submitted_at.strftime('%B %d, %Y at %I:%M %p')}",
+        "",
+        "REPORT SUMMARY",
+        "------------------------------",
+        f"Out of stock: {len(out_of_stock)}",
+        f"Low stock: {len(low_stock)}",
+        f"Complete: {len(complete)}",
+        "",
+    ]
+
+    if out_of_stock:
+        report_lines.extend([
+            "OUT OF STOCK",
+            "------------------------------",
+        ])
+
+        for item in out_of_stock:
+            report_lines.append(
+                f"- {item.item_name}: "
+                f"Have {item.quantity_have}, "
+                f"Required {item.quantity_required}, "
+                f"Need {item.quantity_needed}"
+            )
+
+        report_lines.append("")
+
+    if low_stock:
+        report_lines.extend([
+            "LOW STOCK",
+            "------------------------------",
+        ])
+
+        for item in low_stock:
+            report_lines.append(
+                f"- {item.item_name}: "
+                f"Have {item.quantity_have}, "
+                f"Required {item.quantity_required}, "
+                f"Need {item.quantity_needed}"
+            )
+
+        report_lines.append("")
+
+    report_lines.extend([
+        "View the complete report:",
+        report_url,
+    ])
+
+    send_mail(
+        subject=(
+            f"Daily Inventory Report - "
+            f"{report.submitted_at.strftime('%B %d, %Y')}"
+        ),
+        message="\n".join(report_lines),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[settings.DAILY_REPORT_RECIPIENT],
+        fail_silently=False,
+    )
 
 
 @manager_required
